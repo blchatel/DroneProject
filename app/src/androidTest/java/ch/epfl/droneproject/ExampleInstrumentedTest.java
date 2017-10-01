@@ -1,4 +1,4 @@
-package epfl.ch.droneproject;
+package ch.epfl.droneproject;
 
 import android.content.Context;
 import android.support.test.InstrumentationRegistry;

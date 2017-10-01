@@ -1,4 +1,4 @@
-package epfl.ch.droneproject;
+package ch.epfl.droneproject;
 
 import org.junit.Test;
 
