@@ -1,4 +1,4 @@
-package com.parrot.sdksample.drone;
+package ch.epfl.droneproject.drone;
 
 import android.content.Context;
 import android.os.Handler;
@@ -19,11 +19,10 @@ import com.parrot.arsdk.arcontroller.ARDeviceControllerListener;
 import com.parrot.arsdk.arcontroller.ARDeviceControllerStreamListener;
 import com.parrot.arsdk.arcontroller.ARFeatureARDrone3;
 import com.parrot.arsdk.arcontroller.ARFeatureCommon;
+import com.parrot.arsdk.arcontroller.ARFeatureSkyController;
 import com.parrot.arsdk.arcontroller.ARFrame;
 import com.parrot.arsdk.ardiscovery.ARDISCOVERY_PRODUCT_ENUM;
-import com.parrot.arsdk.ardiscovery.ARDISCOVERY_PRODUCT_FAMILY_ENUM;
 import com.parrot.arsdk.ardiscovery.ARDiscoveryDevice;
-import com.parrot.arsdk.ardiscovery.ARDiscoveryDeviceNetService;
 import com.parrot.arsdk.ardiscovery.ARDiscoveryDeviceService;
 import com.parrot.arsdk.ardiscovery.ARDiscoveryException;
 import com.parrot.arsdk.ardiscovery.ARDiscoveryService;
@@ -35,10 +34,17 @@ import com.parrot.arsdk.arutils.ARUtilsManager;
 import java.util.ArrayList;
 import java.util.List;
 
-public class BebopDrone {
-    private static final String TAG = "BebopDrone";
+public class SkyController2Drone {
+    private static final String TAG = "SkyController2Drone";
 
     public interface Listener {
+        /**
+         * Called when the connection to the SkyController2 changes
+         * Called in the main thread
+         * @param state the state of the SkyController2
+         */
+        void onSkyController2ConnectionChanged(ARCONTROLLER_DEVICE_STATE_ENUM state);
+
         /**
          * Called when the connection to the drone changes
          * Called in the main thread
@@ -47,11 +53,18 @@ public class BebopDrone {
         void onDroneConnectionChanged(ARCONTROLLER_DEVICE_STATE_ENUM state);
 
         /**
+         * Called when the SkyController2 battery charge changes
+         * Called in the main thread
+         * @param batteryPercentage the battery remaining (in percent)
+         */
+        void onSkyController2BatteryChargeChanged(int batteryPercentage);
+
+        /**
          * Called when the battery charge changes
          * Called in the main thread
          * @param batteryPercentage the battery remaining (in percent)
          */
-        void onBatteryChargeChanged(int batteryPercentage);
+        void onDroneBatteryChargeChanged(int batteryPercentage);
 
         /**
          * Called when the piloting state changes
@@ -111,14 +124,15 @@ public class BebopDrone {
 
     private ARDeviceController mDeviceController;
     private SDCardModule mSDCardModule;
-    private ARCONTROLLER_DEVICE_STATE_ENUM mState;
+    private ARCONTROLLER_DEVICE_STATE_ENUM mSkyController2State;
+    private ARCONTROLLER_DEVICE_STATE_ENUM mDroneState;
     private ARCOMMANDS_ARDRONE3_PILOTINGSTATE_FLYINGSTATECHANGED_STATE_ENUM mFlyingState;
     private String mCurrentRunId;
     private ARDiscoveryDeviceService mDeviceService;
     private ARUtilsManager mFtpListManager;
     private ARUtilsManager mFtpQueueManager;
 
-    public BebopDrone(Context context, @NonNull ARDiscoveryDeviceService deviceService) {
+    public SkyController2Drone(Context context, @NonNull ARDiscoveryDeviceService deviceService) {
 
         mContext = context;
         mListeners = new ArrayList<>();
@@ -127,14 +141,15 @@ public class BebopDrone {
         // needed because some callbacks will be called on the main thread
         mHandler = new Handler(context.getMainLooper());
 
-        mState = ARCONTROLLER_DEVICE_STATE_ENUM.ARCONTROLLER_DEVICE_STATE_STOPPED;
+        mSkyController2State = ARCONTROLLER_DEVICE_STATE_ENUM.ARCONTROLLER_DEVICE_STATE_STOPPED;
+        mDroneState = ARCONTROLLER_DEVICE_STATE_ENUM.ARCONTROLLER_DEVICE_STATE_STOPPED;
 
         // if the product type of the deviceService match with the types supported
-        ARDISCOVERY_PRODUCT_ENUM productType = ARDiscoveryService.getProductFromProductID(mDeviceService.getProductID());
-        ARDISCOVERY_PRODUCT_FAMILY_ENUM family = ARDiscoveryService.getProductFamily(productType);
-        if (ARDISCOVERY_PRODUCT_FAMILY_ENUM.ARDISCOVERY_PRODUCT_FAMILY_ARDRONE.equals(family)) {
+        ARDISCOVERY_PRODUCT_ENUM productType = ARDiscoveryService.getProductFromProductID(deviceService.getProductID());
+        if (ARDISCOVERY_PRODUCT_ENUM.ARDISCOVERY_PRODUCT_SKYCONTROLLER_2.equals(productType) ||
+                ARDISCOVERY_PRODUCT_ENUM.ARDISCOVERY_PRODUCT_SKYCONTROLLER_NG.equals(productType)) {
 
-            ARDiscoveryDevice discoveryDevice = createDiscoveryDevice(mDeviceService);
+            ARDiscoveryDevice discoveryDevice = createDiscoveryDevice(deviceService);
             if (discoveryDevice != null) {
                 mDeviceController = createDeviceController(discoveryDevice);
                 discoveryDevice.dispose();
@@ -157,7 +172,7 @@ public class BebopDrone {
             }
 
         } else {
-            Log.e(TAG, "DeviceService type is not supported by BebopDrone");
+            Log.e(TAG, "DeviceService type is not supported by SkyController2Drone");
         }
     }
 
@@ -185,11 +200,11 @@ public class BebopDrone {
      * Connect to the drone
      * @return true if operation was successful.
      *              Returning true doesn't mean that device is connected.
-     *              You can be informed of the actual connection through {@link Listener#onDroneConnectionChanged}
+     *              You can be informed of the actual connection through {@link Listener#onSkyController2ConnectionChanged}
      */
     public boolean connect() {
         boolean success = false;
-        if ((mDeviceController != null) && (ARCONTROLLER_DEVICE_STATE_ENUM.ARCONTROLLER_DEVICE_STATE_STOPPED.equals(mState))) {
+        if ((mDeviceController != null) && (ARCONTROLLER_DEVICE_STATE_ENUM.ARCONTROLLER_DEVICE_STATE_STOPPED.equals(mSkyController2State))) {
             ARCONTROLLER_ERROR_ENUM error = mDeviceController.start();
             if (error == ARCONTROLLER_ERROR_ENUM.ARCONTROLLER_OK) {
                 success = true;
@@ -202,11 +217,11 @@ public class BebopDrone {
      * Disconnect from the drone
      * @return true if operation was successful.
      *              Returning true doesn't mean that device is disconnected.
-     *              You can be informed of the actual disconnection through {@link Listener#onDroneConnectionChanged}
+     *              You can be informed of the actual disconnection through {@link Listener#onSkyController2ConnectionChanged}
      */
     public boolean disconnect() {
         boolean success = false;
-        if ((mDeviceController != null) && (ARCONTROLLER_DEVICE_STATE_ENUM.ARCONTROLLER_DEVICE_STATE_RUNNING.equals(mState))) {
+        if ((mDeviceController != null) && (ARCONTROLLER_DEVICE_STATE_ENUM.ARCONTROLLER_DEVICE_STATE_RUNNING.equals(mSkyController2State))) {
             ARCONTROLLER_ERROR_ENUM error = mDeviceController.stop();
             if (error == ARCONTROLLER_ERROR_ENUM.ARCONTROLLER_OK) {
                 success = true;
@@ -219,8 +234,16 @@ public class BebopDrone {
      * Get the current connection state
      * @return the connection state of the drone
      */
-    public ARCONTROLLER_DEVICE_STATE_ENUM getConnectionState() {
-        return mState;
+    public ARCONTROLLER_DEVICE_STATE_ENUM getSkyController2ConnectionState() {
+        return mSkyController2State;
+    }
+
+    /**
+     * Get the current connection state
+     * @return the connection state of the drone
+     */
+    public ARCONTROLLER_DEVICE_STATE_ENUM getDroneConnectionState() {
+        return mDroneState;
     }
 
     /**
@@ -232,70 +255,34 @@ public class BebopDrone {
     }
 
     public void takeOff() {
-        if ((mDeviceController != null) && (mState.equals(ARCONTROLLER_DEVICE_STATE_ENUM.ARCONTROLLER_DEVICE_STATE_RUNNING))) {
+        if ((mDeviceController != null) &&
+                (mSkyController2State.equals(ARCONTROLLER_DEVICE_STATE_ENUM.ARCONTROLLER_DEVICE_STATE_RUNNING)) &&
+                (mDeviceController.getExtensionState().equals(ARCONTROLLER_DEVICE_STATE_ENUM.ARCONTROLLER_DEVICE_STATE_RUNNING))) {
             mDeviceController.getFeatureARDrone3().sendPilotingTakeOff();
         }
     }
 
     public void land() {
-        if ((mDeviceController != null) && (mState.equals(ARCONTROLLER_DEVICE_STATE_ENUM.ARCONTROLLER_DEVICE_STATE_RUNNING))) {
+        if ((mDeviceController != null) &&
+                (mSkyController2State.equals(ARCONTROLLER_DEVICE_STATE_ENUM.ARCONTROLLER_DEVICE_STATE_RUNNING)) &&
+                (mDeviceController.getExtensionState().equals(ARCONTROLLER_DEVICE_STATE_ENUM.ARCONTROLLER_DEVICE_STATE_RUNNING))) {
             mDeviceController.getFeatureARDrone3().sendPilotingLanding();
         }
     }
 
     public void emergency() {
-        if ((mDeviceController != null) && (mState.equals(ARCONTROLLER_DEVICE_STATE_ENUM.ARCONTROLLER_DEVICE_STATE_RUNNING))) {
+        if ((mDeviceController != null) &&
+                (mSkyController2State.equals(ARCONTROLLER_DEVICE_STATE_ENUM.ARCONTROLLER_DEVICE_STATE_RUNNING)) &&
+                (mDeviceController.getExtensionState().equals(ARCONTROLLER_DEVICE_STATE_ENUM.ARCONTROLLER_DEVICE_STATE_RUNNING))) {
             mDeviceController.getFeatureARDrone3().sendPilotingEmergency();
         }
     }
 
     public void takePicture() {
-        if ((mDeviceController != null) && (mState.equals(ARCONTROLLER_DEVICE_STATE_ENUM.ARCONTROLLER_DEVICE_STATE_RUNNING))) {
+        if ((mDeviceController != null) &&
+                (mSkyController2State.equals(ARCONTROLLER_DEVICE_STATE_ENUM.ARCONTROLLER_DEVICE_STATE_RUNNING)) &&
+                (mDeviceController.getExtensionState().equals(ARCONTROLLER_DEVICE_STATE_ENUM.ARCONTROLLER_DEVICE_STATE_RUNNING))) {
             mDeviceController.getFeatureARDrone3().sendMediaRecordPictureV2();
-        }
-    }
-
-    /**
-     * Set the forward/backward angle of the drone
-     * Note that {@link BebopDrone#setFlag(byte)} should be set to 1 in order to take in account the pitch value
-     * @param pitch value in percentage from -100 to 100
-     */
-    public void setPitch(byte pitch) {
-        if ((mDeviceController != null) && (mState.equals(ARCONTROLLER_DEVICE_STATE_ENUM.ARCONTROLLER_DEVICE_STATE_RUNNING))) {
-            mDeviceController.getFeatureARDrone3().setPilotingPCMDPitch(pitch);
-        }
-    }
-
-    /**
-     * Set the side angle of the drone
-     * Note that {@link BebopDrone#setFlag(byte)} should be set to 1 in order to take in account the roll value
-     * @param roll value in percentage from -100 to 100
-     */
-    public void setRoll(byte roll) {
-        if ((mDeviceController != null) && (mState.equals(ARCONTROLLER_DEVICE_STATE_ENUM.ARCONTROLLER_DEVICE_STATE_RUNNING))) {
-            mDeviceController.getFeatureARDrone3().setPilotingPCMDRoll(roll);
-        }
-    }
-
-    public void setYaw(byte yaw) {
-        if ((mDeviceController != null) && (mState.equals(ARCONTROLLER_DEVICE_STATE_ENUM.ARCONTROLLER_DEVICE_STATE_RUNNING))) {
-            mDeviceController.getFeatureARDrone3().setPilotingPCMDYaw(yaw);
-        }
-    }
-
-    public void setGaz(byte gaz) {
-        if ((mDeviceController != null) && (mState.equals(ARCONTROLLER_DEVICE_STATE_ENUM.ARCONTROLLER_DEVICE_STATE_RUNNING))) {
-            mDeviceController.getFeatureARDrone3().setPilotingPCMDGaz(gaz);
-        }
-    }
-
-    /**
-     * Take in account or not the pitch and roll values
-     * @param flag 1 if the pitch and roll values should be used, 0 otherwise
-     */
-    public void setFlag(byte flag) {
-        if ((mDeviceController != null) && (mState.equals(ARCONTROLLER_DEVICE_STATE_ENUM.ARCONTROLLER_DEVICE_STATE_RUNNING))) {
-            mDeviceController.getFeatureARDrone3().setPilotingPCMDFlag(flag);
         }
     }
 
@@ -345,17 +332,31 @@ public class BebopDrone {
     }
 
     //region notify listener block
-    private void notifyConnectionChanged(ARCONTROLLER_DEVICE_STATE_ENUM state) {
+    private void notifySkyController2ConnectionChanged(ARCONTROLLER_DEVICE_STATE_ENUM state) {
+        List<Listener> listenersCpy = new ArrayList<>(mListeners);
+        for (Listener listener : listenersCpy) {
+            listener.onSkyController2ConnectionChanged(state);
+        }
+    }
+
+    private void notifyDroneConnectionChanged(ARCONTROLLER_DEVICE_STATE_ENUM state) {
         List<Listener> listenersCpy = new ArrayList<>(mListeners);
         for (Listener listener : listenersCpy) {
             listener.onDroneConnectionChanged(state);
         }
     }
 
-    private void notifyBatteryChanged(int battery) {
+    private void notifySkyController2BatteryChanged(int battery) {
         List<Listener> listenersCpy = new ArrayList<>(mListeners);
         for (Listener listener : listenersCpy) {
-            listener.onBatteryChargeChanged(battery);
+            listener.onSkyController2BatteryChargeChanged(battery);
+        }
+    }
+
+    private void notifyDroneBatteryChanged(int battery) {
+        List<Listener> listenersCpy = new ArrayList<>(mListeners);
+        for (Listener listener : listenersCpy) {
+            listener.onDroneBatteryChargeChanged(battery);
         }
     }
 
@@ -444,22 +445,29 @@ public class BebopDrone {
     private final ARDeviceControllerListener mDeviceControllerListener = new ARDeviceControllerListener() {
         @Override
         public void onStateChanged(ARDeviceController deviceController, ARCONTROLLER_DEVICE_STATE_ENUM newState, ARCONTROLLER_ERROR_ENUM error) {
-            mState = newState;
-            if (ARCONTROLLER_DEVICE_STATE_ENUM.ARCONTROLLER_DEVICE_STATE_RUNNING.equals(mState)) {
-                mDeviceController.getFeatureARDrone3().sendMediaStreamingVideoEnable((byte) 1);
-            } else if (ARCONTROLLER_DEVICE_STATE_ENUM.ARCONTROLLER_DEVICE_STATE_STOPPED.equals(mState)) {
-                mSDCardModule.cancelGetFlightMedias();
-            }
+            mSkyController2State = newState;
             mHandler.post(new Runnable() {
                 @Override
                 public void run() {
-                    notifyConnectionChanged(mState);
+                    notifySkyController2ConnectionChanged(mSkyController2State);
                 }
             });
         }
 
         @Override
         public void onExtensionStateChanged(ARDeviceController deviceController, ARCONTROLLER_DEVICE_STATE_ENUM newState, ARDISCOVERY_PRODUCT_ENUM product, String name, ARCONTROLLER_ERROR_ENUM error) {
+            mDroneState = newState;
+            if (ARCONTROLLER_DEVICE_STATE_ENUM.ARCONTROLLER_DEVICE_STATE_RUNNING.equals(mDroneState)) {
+                mDeviceController.getFeatureARDrone3().sendMediaStreamingVideoEnable((byte) 1);
+            } else if (ARCONTROLLER_DEVICE_STATE_ENUM.ARCONTROLLER_DEVICE_STATE_STOPPED.equals(mDroneState)) {
+                mSDCardModule.cancelGetFlightMedias();
+            }
+            mHandler.post(new Runnable() {
+                @Override
+                public void run() {
+                    notifyDroneConnectionChanged(mDroneState);
+                }
+            });
         }
 
         @Override
@@ -472,7 +480,20 @@ public class BebopDrone {
                     mHandler.post(new Runnable() {
                         @Override
                         public void run() {
-                            notifyBatteryChanged(battery);
+                            notifyDroneBatteryChanged(battery);
+                        }
+                    });
+                }
+            }
+            // if event received is the skyController2 battery update
+            if ((commandKey == ARCONTROLLER_DICTIONARY_KEY_ENUM.ARCONTROLLER_DICTIONARY_KEY_SKYCONTROLLER_SKYCONTROLLERSTATE_BATTERYCHANGED) && (elementDictionary != null)) {
+                ARControllerArgumentDictionary<Object> args = elementDictionary.get(ARControllerDictionary.ARCONTROLLER_DICTIONARY_SINGLE_KEY);
+                if (args != null) {
+                    final int battery = (Integer) args.get(ARFeatureSkyController.ARCONTROLLER_DICTIONARY_KEY_SKYCONTROLLER_SKYCONTROLLERSTATE_BATTERYCHANGED_PERCENT);
+                    mHandler.post(new Runnable() {
+                        @Override
+                        public void run() {
+                            notifySkyController2BatteryChanged(battery);
                         }
                     });
                 }

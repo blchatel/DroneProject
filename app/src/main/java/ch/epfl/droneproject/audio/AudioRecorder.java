@@ -1,4 +1,4 @@
-package com.parrot.sdksample.audio;
+package ch.epfl.droneproject.audio;
 
 import android.media.AudioFormat;
 import android.media.AudioRecord;

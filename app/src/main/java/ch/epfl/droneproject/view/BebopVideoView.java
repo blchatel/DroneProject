@@ -1,4 +1,4 @@
-package com.parrot.sdksample.view;
+package ch.epfl.droneproject.view;
 
 import android.content.Context;
 import android.media.MediaCodec;

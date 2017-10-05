@@ -1,4 +1,4 @@
-package com.parrot.sdksample.drone;
+package ch.epfl.droneproject.drone;
 
 import android.os.Environment;
 import android.support.annotation.NonNull;
