@@ -31,17 +31,25 @@ public class DroneDiscoverer
         void onDronesListUpdated(List<ARDiscoveryDeviceService> dronesList);
     }
 
+    /** */
     private final List<Listener> mListeners;
 
-
+    /** */
     private final Context mCtx;
 
+    /** */
     private ARDiscoveryService mARDiscoveryService;
+
+    /** */
     private ServiceConnection mARDiscoveryServiceConnection;
+
+    /** */
     private final ARDiscoveryServicesDevicesListUpdatedReceiver mARDiscoveryServicesDevicesListUpdatedReceiver;
 
+    /** */
     private final List<ARDiscoveryDeviceService> mMatchingDrones;
 
+    /** */
     private boolean mStartDiscoveryAfterConnection;
 
 
@@ -171,6 +179,7 @@ public class DroneDiscoverer
     }
 
     private void notifyServiceDiscovered(List<ARDiscoveryDeviceService> dronesList) {
+        Log.e("REFRESH", "NOTIFY");
         List<Listener> listenersCpy = new ArrayList<>(mListeners);
         for (Listener listener : listenersCpy) {
             listener.onDronesListUpdated(dronesList);

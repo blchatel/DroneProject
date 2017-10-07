@@ -22,9 +22,11 @@
         </activity>
         <activity android:name=".activity.DeviceListActivity">
         </activity>
-        <activity android:name=".activity.BebopActivity">
+        <activity android:name=".activity.BebopActivity" android:screenOrientation="landscape" android:configChanges="orientation|keyboardHidden">
         </activity>
-        <activity android:name=".activity.SkyController2Activity">
+        <activity android:name=".activity.SkyController2Activity" android:screenOrientation="landscape" android:configChanges="orientation|keyboardHidden" android:theme="@style/AppTheme.NoActionBar">
+        </activity>
+        <activity android:name=".activity.UsbAccessoryActivityImpl">
         </activity>
     </application>
 

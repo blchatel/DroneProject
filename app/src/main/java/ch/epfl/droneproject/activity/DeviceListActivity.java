@@ -7,6 +7,7 @@ import android.os.Bundle;
 import android.support.annotation.NonNull;
 import android.support.v4.app.ActivityCompat;
 import android.support.v4.content.ContextCompat;
+import android.support.v4.widget.SwipeRefreshLayout;
 import android.support.v7.app.AppCompatActivity;
 import android.util.Log;
 import android.view.LayoutInflater;
@@ -34,7 +35,7 @@ import ch.epfl.droneproject.R;
 import ch.epfl.droneproject.discovery.DroneDiscoverer;
 
 
-public class DeviceListActivity extends AppCompatActivity {
+public class DeviceListActivity extends AppCompatActivity{
     public static final String EXTRA_DEVICE_SERVICE = "EXTRA_DEVICE_SERVICE";
 
     private static final String TAG = "DeviceListActivity";
@@ -48,8 +49,10 @@ public class DeviceListActivity extends AppCompatActivity {
     /** Code for permission request result handling. */
     private static final int REQUEST_CODE_PERMISSIONS_REQUEST = 1;
 
+    /** DroneDiscoverer object*/
     public DroneDiscoverer mDroneDiscoverer;
 
+    /** List of discovered drones*/
     private final List<ARDiscoveryDeviceService> mDronesList = new ArrayList<>();
 
     // this block loads the native libraries
@@ -61,17 +64,54 @@ public class DeviceListActivity extends AppCompatActivity {
     @Override
     protected void onCreate(Bundle savedInstanceState)
     {
+        // Call parent and set content layout
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_device_list);
-        final ListView listView = (ListView) findViewById(R.id.list);
 
-        // Assign adapter to ListView
+        // Check for permission
+        Set<String> permissionsToRequest = new HashSet<>();
+        for (String permission : PERMISSIONS_NEEDED) {
+            if (ContextCompat.checkSelfPermission(this, permission) != PackageManager.PERMISSION_GRANTED) {
+                if (ActivityCompat.shouldShowRequestPermissionRationale(this, permission)) {
+                    Toast.makeText(this, "Please allow permission " + permission, Toast.LENGTH_LONG).show();
+                    finish();
+                    return;
+                } else {
+                    permissionsToRequest.add(permission);
+                }
+            }
+        }
+        if (permissionsToRequest.size() > 0) {
+            ActivityCompat.requestPermissions(this,
+                    permissionsToRequest.toArray(new String[permissionsToRequest.size()]),
+                    REQUEST_CODE_PERMISSIONS_REQUEST);
+        }
+
+
+        // Init the drone discoverer
+        mDroneDiscoverer = new DroneDiscoverer(this);
+
+        // Assign the onRefresh listener of the swipe refresh layout
+        final SwipeRefreshLayout swipeLayout = (SwipeRefreshLayout) findViewById(R.id.swiperefresh);
+        swipeLayout.setOnRefreshListener(new SwipeRefreshLayout.OnRefreshListener() {
+
+            @Override
+            public void onRefresh() {
+                 Log.e("REFRESH", "REFRESH");
+                // Do something if needed
+                 swipeLayout.setRefreshing(false);
+            }
+        });
+
+        // Assign adapter to ListView and assign an "onItemClick" listener
+        final ListView listView = (ListView) findViewById(R.id.list);
         listView.setAdapter(mAdapter);
         listView.setOnItemClickListener(new AdapterView.OnItemClickListener()
         {
             @Override
             public void onItemClick(AdapterView<?> parent, View view, int position, long id)
             {
+
                 // launch the activity related to the type of discovery device service
                 Intent intent = null;
 
@@ -96,30 +136,12 @@ public class DeviceListActivity extends AppCompatActivity {
             }
         });
 
-        mDroneDiscoverer = new DroneDiscoverer(this);
-
-        Set<String> permissionsToRequest = new HashSet<>();
-        for (String permission : PERMISSIONS_NEEDED) {
-            if (ContextCompat.checkSelfPermission(this, permission) != PackageManager.PERMISSION_GRANTED) {
-                if (ActivityCompat.shouldShowRequestPermissionRationale(this, permission)) {
-                    Toast.makeText(this, "Please allow permission " + permission, Toast.LENGTH_LONG).show();
-                    finish();
-                    return;
-                } else {
-                    permissionsToRequest.add(permission);
-                }
-            }
-        }
-        if (permissionsToRequest.size() > 0) {
-            ActivityCompat.requestPermissions(this,
-                    permissionsToRequest.toArray(new String[permissionsToRequest.size()]),
-                    REQUEST_CODE_PERMISSIONS_REQUEST);
-        }
     }
 
     @Override
     protected void onResume()
     {
+        // Call parent
         super.onResume();
 
         // setup the drone discoverer and register as listener
@@ -133,6 +155,7 @@ public class DeviceListActivity extends AppCompatActivity {
     @Override
     protected void onPause()
     {
+        // Call parent
         super.onPause();
 
         // clean the drone discoverer object
@@ -140,6 +163,7 @@ public class DeviceListActivity extends AppCompatActivity {
         mDroneDiscoverer.cleanup();
         mDroneDiscoverer.removeListener(mDiscovererListener);
     }
+
 
     @Override
     public void onRequestPermissionsResult(int requestCode, @NonNull String[] permissions,
@@ -166,11 +190,12 @@ public class DeviceListActivity extends AppCompatActivity {
 
     @Override
     public void onBackPressed() {
-        // Do nothing
+        // Do nothing ! This override is mandatory to avoid back on title
     }
 
     @Override
     public boolean onCreateOptionsMenu(Menu menu) {
+        // NO MENU FOR NOW
         // Inflate the menu; this adds items to the action bar if it is present.
         //getMenuInflater().inflate(R.menu., menu);
         return true;
@@ -178,6 +203,7 @@ public class DeviceListActivity extends AppCompatActivity {
 
     @Override
     public boolean onOptionsItemSelected(MenuItem item) {
+        // NO MENU ITEM FOR NOW
         // Handle action bar item clicks here. The action bar will
         // automatically handle clicks on the Home/Up button, so long
         // as you specify a parent activity in AndroidManifest.xml.
@@ -187,6 +213,7 @@ public class DeviceListActivity extends AppCompatActivity {
         }
     }
 
+    /** Drone discover listener which override onDroneListUpdate*/
     private final DroneDiscoverer.Listener mDiscovererListener = new  DroneDiscoverer.Listener() {
 
         @Override
@@ -198,10 +225,13 @@ public class DeviceListActivity extends AppCompatActivity {
         }
     };
 
+
+    /** NEED TO UNDERSTAND USE OF THIS CLASS*/
     static class ViewHolder {
         public TextView text;
     }
 
+    /** ListView personalized adapter */
     private final BaseAdapter mAdapter = new BaseAdapter()
     {
         @Override
@@ -243,9 +273,7 @@ public class DeviceListActivity extends AppCompatActivity {
             // Can use the product here to setText better
             //ARDISCOVERY_PRODUCT_ENUM product = ARDiscoveryService.getProductFromProductID(service.getProductID());
 
-
             holder.text.setText(service.getName() + " on " + service.getNetworkType());
-
 
             return rowView;
         }

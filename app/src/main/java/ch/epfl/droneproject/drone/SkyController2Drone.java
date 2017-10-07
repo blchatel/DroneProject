@@ -31,6 +31,8 @@ import com.parrot.arsdk.arutils.ARUTILS_FTP_TYPE_ENUM;
 import com.parrot.arsdk.arutils.ARUtilsException;
 import com.parrot.arsdk.arutils.ARUtilsManager;
 
+import com.parrot.arsdk.ardiscovery.UsbAccessoryMux;
+
 import java.util.ArrayList;
 import java.util.List;
 
