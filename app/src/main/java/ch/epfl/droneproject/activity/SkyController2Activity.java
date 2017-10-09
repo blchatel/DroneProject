@@ -18,9 +18,14 @@ import com.parrot.arsdk.arcontroller.ARControllerCodec;
 import com.parrot.arsdk.arcontroller.ARFrame;
 import com.parrot.arsdk.ardiscovery.ARDiscoveryDeviceService;
 
+import java.io.BufferedReader;
+import java.io.IOException;
+import java.io.InputStreamReader;
+
 import ch.epfl.droneproject.R;
 import ch.epfl.droneproject.drone.SkyController2Drone;
 import ch.epfl.droneproject.view.BebopVideoView;
+import ch.epfl.droneproject.view.ConsoleView;
 
 
 public class SkyController2Activity extends AppCompatActivity {
@@ -36,7 +41,7 @@ public class SkyController2Activity extends AppCompatActivity {
     private TextView mSkyController2BatteryLabel;
     private TextView mDroneConnectionLabel;
     private Button mDownloadBt;
-    private EditText mConsole;
+    private ConsoleView mConsole;
 
 
     private int mNbMaxDownload;
@@ -106,7 +111,7 @@ public class SkyController2Activity extends AppCompatActivity {
 
         findViewById(R.id.emergencyBt).setOnClickListener(new View.OnClickListener() {
             public void onClick(View v) {
-                mSkyController2Drone.emergency();
+                mSkyController2Drone.skeModule().emergency();
             }
         });
 
@@ -135,15 +140,12 @@ public class SkyController2Activity extends AppCompatActivity {
 
         mDroneConnectionLabel = (TextView) findViewById(R.id.droneConnectionLabel);
 
-        mConsole = (EditText) findViewById(R.id.console);
+        mConsole = (ConsoleView) findViewById(R.id.console);
 
+        for (int i = 0; i< 100; i++){
+            mConsole.push("Message number "+i);
+        }
     }
-
-    private void pushConsoleMessage(String message){
-        String actualConsole = mConsole.getText().toString();
-        mConsole.setText(message + "\n"+ actualConsole);
-    }
-
 
     private final SkyController2Drone.Listener mSkyController2Listener = new SkyController2Drone.Listener() {
         @Override

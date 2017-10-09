@@ -34,6 +34,8 @@ import com.parrot.arsdk.arutils.ARUtilsManager;
 import java.util.ArrayList;
 import java.util.List;
 
+import ch.epfl.droneproject.module.SDCardModule;
+
 public class BebopDrone {
     private static final String TAG = "BebopDrone";
 
@@ -127,6 +129,7 @@ public class BebopDrone {
         mHandler = new Handler(context.getMainLooper());
 
         mState = ARCONTROLLER_DEVICE_STATE_ENUM.ARCONTROLLER_DEVICE_STATE_STOPPED;
+
 
         // if the product type of the deviceService match with the types supported
         ARDISCOVERY_PRODUCT_ENUM productType = ARDiscoveryService.getProductFromProductID(mDeviceService.getProductID());

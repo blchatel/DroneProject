@@ -31,10 +31,11 @@ import com.parrot.arsdk.arutils.ARUTILS_FTP_TYPE_ENUM;
 import com.parrot.arsdk.arutils.ARUtilsException;
 import com.parrot.arsdk.arutils.ARUtilsManager;
 
-import com.parrot.arsdk.ardiscovery.UsbAccessoryMux;
-
 import java.util.ArrayList;
 import java.util.List;
+
+import ch.epfl.droneproject.module.SDCardModule;
+import ch.epfl.droneproject.module.SkyControllerExtensionModule;
 
 public class SkyController2Drone {
     private static final String TAG = "SkyController2Drone";
@@ -126,6 +127,8 @@ public class SkyController2Drone {
 
     private ARDeviceController mDeviceController;
     private SDCardModule mSDCardModule;
+    private SkyControllerExtensionModule mSKEModule;
+
     private ARCONTROLLER_DEVICE_STATE_ENUM mSkyController2State;
     private ARCONTROLLER_DEVICE_STATE_ENUM mDroneState;
     private ARCOMMANDS_ARDRONE3_PILOTINGSTATE_FLYINGSTATECHANGED_STATE_ENUM mFlyingState;
@@ -256,36 +259,12 @@ public class SkyController2Drone {
         return mFlyingState;
     }
 
-    public void takeOff() {
-        if ((mDeviceController != null) &&
-                (mSkyController2State.equals(ARCONTROLLER_DEVICE_STATE_ENUM.ARCONTROLLER_DEVICE_STATE_RUNNING)) &&
-                (mDeviceController.getExtensionState().equals(ARCONTROLLER_DEVICE_STATE_ENUM.ARCONTROLLER_DEVICE_STATE_RUNNING))) {
-            mDeviceController.getFeatureARDrone3().sendPilotingTakeOff();
-        }
-    }
-
-    public void land() {
-        if ((mDeviceController != null) &&
-                (mSkyController2State.equals(ARCONTROLLER_DEVICE_STATE_ENUM.ARCONTROLLER_DEVICE_STATE_RUNNING)) &&
-                (mDeviceController.getExtensionState().equals(ARCONTROLLER_DEVICE_STATE_ENUM.ARCONTROLLER_DEVICE_STATE_RUNNING))) {
-            mDeviceController.getFeatureARDrone3().sendPilotingLanding();
-        }
-    }
-
-    public void emergency() {
-        if ((mDeviceController != null) &&
-                (mSkyController2State.equals(ARCONTROLLER_DEVICE_STATE_ENUM.ARCONTROLLER_DEVICE_STATE_RUNNING)) &&
-                (mDeviceController.getExtensionState().equals(ARCONTROLLER_DEVICE_STATE_ENUM.ARCONTROLLER_DEVICE_STATE_RUNNING))) {
-            mDeviceController.getFeatureARDrone3().sendPilotingEmergency();
-        }
-    }
-
-    public void takePicture() {
-        if ((mDeviceController != null) &&
-                (mSkyController2State.equals(ARCONTROLLER_DEVICE_STATE_ENUM.ARCONTROLLER_DEVICE_STATE_RUNNING)) &&
-                (mDeviceController.getExtensionState().equals(ARCONTROLLER_DEVICE_STATE_ENUM.ARCONTROLLER_DEVICE_STATE_RUNNING))) {
-            mDeviceController.getFeatureARDrone3().sendMediaRecordPictureV2();
-        }
+    /**
+     * Give access to the controller extension module for skycontroller 2
+     * @return the skeModule : SkyControllerExtensionModule
+     */
+    public SkyControllerExtensionModule skeModule(){
+        return this.mSKEModule;
     }
 
     /**
