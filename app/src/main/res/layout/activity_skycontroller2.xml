@@ -91,13 +91,14 @@ android:layout_height="match_parent">
             android:textSize="25sp"
             android:textColor="@color/secondary_text"/>
 
-        <EditText
+        <ch.epfl.droneproject.view.ConsoleView
             android:id="@+id/console"
             android:layout_width="match_parent"
             android:layout_height="56dp"
             android:layout_alignParentBottom="true"
             android:background="@android:color/black"
-            android:editable="false"
+            android:inputType="none"
+            android:maxLines="50"
             android:scrollbarAlwaysDrawHorizontalTrack="false"
             android:scrollbarAlwaysDrawVerticalTrack="false"
             android:scrollbars="vertical"
