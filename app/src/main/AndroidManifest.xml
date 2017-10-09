@@ -2,9 +2,12 @@
 <manifest xmlns:android="http://schemas.android.com/apk/res/android"
     package="ch.epfl.droneproject">
 
-    <uses-permission android:name="android.permission.WRITE_EXTERNAL_STORAGE"/>
-    <uses-permission android:name="android.permission.RECORD_AUDIO"/>
-    <uses-feature android:name="android.hardware.usb.accessory" android:required="false"/>
+    <uses-permission android:name="android.permission.WRITE_EXTERNAL_STORAGE" />
+    <uses-permission android:name="android.permission.RECORD_AUDIO" />
+
+    <uses-feature
+        android:name="android.hardware.usb.accessory"
+        android:required="false" />
 
     <application
         android:allowBackup="true"
@@ -20,14 +23,18 @@
                 <category android:name="android.intent.category.LAUNCHER" />
             </intent-filter>
         </activity>
-        <activity android:name=".activity.DeviceListActivity">
+        <activity android:name=".activity.DeviceListActivity"></activity>
+        <activity
+            android:name=".activity.BebopActivity"
+            android:configChanges="orientation|keyboardHidden"
+            android:screenOrientation="landscape"></activity>
+        <activity
+            android:name=".activity.SkyController2Activity"
+            android:configChanges="orientation|keyboardHidden"
+            android:screenOrientation="landscape"
+            android:theme="@style/AppTheme.NoActionBar">
         </activity>
-        <activity android:name=".activity.BebopActivity" android:screenOrientation="landscape" android:configChanges="orientation|keyboardHidden">
-        </activity>
-        <activity android:name=".activity.SkyController2Activity" android:screenOrientation="landscape" android:configChanges="orientation|keyboardHidden" android:theme="@style/AppTheme.NoActionBar">
-        </activity>
-        <activity android:name=".activity.UsbAccessoryActivityImpl">
-        </activity>
+        <activity android:name=".activity.UsbAccessoryActivityImpl"></activity>
     </application>
 
 </manifest>

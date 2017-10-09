@@ -1,84 +1,145 @@
-<RelativeLayout
-    xmlns:android="http://schemas.android.com/apk/res/android"
-    xmlns:tools="http://schemas.android.com/tools"
-    android:layout_width="match_parent"
-    android:layout_height="match_parent"
-    tools:context=".activity.BebopActivity"
-    android:id="@+id/piloting_view">
 
-    <ch.epfl.droneproject.view.BebopVideoView
-        android:id="@+id/videoView"
+
+
+<android.support.v4.widget.DrawerLayout
+xmlns:android="http://schemas.android.com/apk/res/android"
+android:id="@+id/drawer_layout"
+android:layout_width="match_parent"
+android:layout_height="match_parent">
+    <!-- The main content view -->
+    <RelativeLayout
+        xmlns:android="http://schemas.android.com/apk/res/android"
+        xmlns:tools="http://schemas.android.com/tools"
         android:layout_width="match_parent"
-        android:layout_height="match_parent"/>
-    <Button
-        android:layout_width="wrap_content"
-        android:layout_height="wrap_content"
-        android:text="Emergency"
-        android:id="@+id/emergencyBt"
-        android:layout_alignParentTop="true"
-        android:layout_centerHorizontal="true"
-        android:width="150dp"/>
+        android:layout_height="match_parent"
+        tools:context=".activity.BebopActivity"
+        android:id="@+id/piloting_view">
 
-    <Button
-        android:layout_width="wrap_content"
-        android:layout_height="wrap_content"
-        android:text="Download"
-        android:id="@+id/downloadBt"
-        android:layout_alignParentBottom="true"
-        android:layout_alignParentRight="true"
-        android:width="150dp"/>
+        <ch.epfl.droneproject.view.BebopVideoView
+            android:id="@+id/videoView"
+            android:layout_width="match_parent"
+            android:layout_height="match_parent"/>
+        <Button
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:text="Emergency"
+            android:id="@+id/emergencyBt"
+            android:layout_alignParentTop="true"
+            android:layout_centerHorizontal="true"
+            android:width="150dp"/>
 
-    <TextView
-        android:layout_width="wrap_content"
-        android:layout_height="wrap_content"
-        android:textAppearance="?android:attr/textAppearanceMedium"
-        android:text="SkyController Battery: "
-        android:id="@+id/skyBatteryText"
-        android:layout_alignParentTop="true"
-        android:layout_alignParentLeft="true"
-        android:layout_alignParentStart="true"
-        android:textColor="#ff0000" />
+        <Button
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:text="Download"
+            android:id="@+id/downloadBt"
+            android:layout_alignParentBottom="true"
+            android:layout_alignParentRight="true"
+            android:width="150dp"/>
 
-    <TextView
-        android:layout_width="wrap_content"
-        android:layout_height="wrap_content"
-        android:textAppearance="?android:attr/textAppearanceMedium"
-        android:text="XXX%"
-        android:id="@+id/skyBatteryLabel"
-        android:layout_alignParentTop="true"
-        android:layout_toRightOf="@id/skyBatteryText"
-        android:layout_toEndOf="@id/skyBatteryText"
-        android:textColor="#ff0000" />
+        <TextView
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:textAppearance="?android:attr/textAppearanceMedium"
+            android:text="SkyController Battery: "
+            android:id="@+id/skyBatteryText"
+            android:layout_alignParentTop="true"
+            android:layout_alignParentLeft="true"
+            android:layout_alignParentStart="true"
+            android:textColor="#ff0000" />
 
-    <TextView
-        android:layout_width="wrap_content"
-        android:layout_height="wrap_content"
-        android:textAppearance="?android:attr/textAppearanceMedium"
-        android:text="Drone battery: "
-        android:id="@+id/droneBatteryText"
-        android:layout_below="@id/skyBatteryText"
-        android:layout_alignParentLeft="true"
-        android:layout_alignParentStart="true"
-        android:textColor="#ff0000" />
+        <TextView
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:textAppearance="?android:attr/textAppearanceMedium"
+            android:text="XXX%"
+            android:id="@+id/skyBatteryLabel"
+            android:layout_alignParentTop="true"
+            android:layout_toRightOf="@id/skyBatteryText"
+            android:layout_toEndOf="@id/skyBatteryText"
+            android:textColor="#ff0000" />
 
-    <TextView
-        android:layout_width="wrap_content"
-        android:layout_height="wrap_content"
-        android:textAppearance="?android:attr/textAppearanceMedium"
-        android:text="XXX%"
-        android:id="@+id/droneBatteryLabel"
-        android:layout_below="@id/skyBatteryLabel"
-        android:layout_toRightOf="@+id/droneBatteryText"
-        android:layout_toEndOf="@+id/droneBatteryText"
-        android:textColor="#ff0000" />
+        <TextView
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:textAppearance="?android:attr/textAppearanceMedium"
+            android:text="Drone battery: "
+            android:id="@+id/droneBatteryText"
+            android:layout_below="@id/skyBatteryText"
+            android:layout_alignParentLeft="true"
+            android:layout_alignParentStart="true"
+            android:textColor="#ff0000" />
 
-    <TextView
-        android:id="@+id/droneConnectionLabel"
-        android:layout_width="wrap_content"
-        android:layout_height="wrap_content"
-        android:layout_centerInParent="true"
-        android:visibility="gone"
-        android:text="Waiting for a drone"
-        android:textSize="25sp"
-        android:textColor="@color/secondary_text"/>
-</RelativeLayout>
+        <TextView
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:textAppearance="?android:attr/textAppearanceMedium"
+            android:text="XXX%"
+            android:id="@+id/droneBatteryLabel"
+            android:layout_below="@id/skyBatteryLabel"
+            android:layout_toRightOf="@+id/droneBatteryText"
+            android:layout_toEndOf="@+id/droneBatteryText"
+            android:textColor="#ff0000" />
+
+        <TextView
+            android:id="@+id/droneConnectionLabel"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_centerInParent="true"
+            android:visibility="gone"
+            android:text="Waiting for a drone"
+            android:textSize="25sp"
+            android:textColor="@color/secondary_text"/>
+
+        <EditText
+            android:id="@+id/console"
+            android:layout_width="match_parent"
+            android:layout_height="56dp"
+            android:layout_alignParentBottom="true"
+            android:background="@android:color/black"
+            android:editable="false"
+            android:scrollbarAlwaysDrawHorizontalTrack="false"
+            android:scrollbarAlwaysDrawVerticalTrack="false"
+            android:scrollbars="vertical"
+            android:textColor="@android:color/white" />
+    </RelativeLayout>
+    <!-- The navigation drawer -->
+    <LinearLayout
+        android:layout_width="240dp"
+        android:layout_height="match_parent"
+        android:layout_gravity="start"
+        android:orientation="horizontal"
+        android:divider="@android:color/transparent"
+        android:dividerHeight="0dp"
+        android:background="#111">
+
+        <Button
+            android:id="@+id/button11"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_weight="1"
+            android:text="Button" />
+        <Button
+            android:id="@+id/button2"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_weight="1"
+            android:text="Button" />
+        <Button
+            android:id="@+id/button3"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_weight="1"
+            android:text="Button" />
+        <Button
+            android:id="@+id/button4"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_weight="1"
+            android:text="Button" />
+    </LinearLayout>
+
+</android.support.v4.widget.DrawerLayout>
+
+
+

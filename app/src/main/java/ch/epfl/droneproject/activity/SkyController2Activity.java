@@ -8,6 +8,7 @@ import android.support.v7.app.AppCompatActivity;
 import android.util.Log;
 import android.view.View;
 import android.widget.Button;
+import android.widget.EditText;
 import android.widget.TextView;
 
 import com.parrot.arsdk.arcommands.ARCOMMANDS_ARDRONE3_MEDIARECORDEVENT_PICTUREEVENTCHANGED_ERROR_ENUM;
@@ -35,6 +36,8 @@ public class SkyController2Activity extends AppCompatActivity {
     private TextView mSkyController2BatteryLabel;
     private TextView mDroneConnectionLabel;
     private Button mDownloadBt;
+    private EditText mConsole;
+
 
     private int mNbMaxDownload;
     private int mCurrentDownloadIndex;
@@ -131,7 +134,16 @@ public class SkyController2Activity extends AppCompatActivity {
         mDroneBatteryLabel = (TextView) findViewById(R.id.droneBatteryLabel);
 
         mDroneConnectionLabel = (TextView) findViewById(R.id.droneConnectionLabel);
+
+        mConsole = (EditText) findViewById(R.id.console);
+
     }
+
+    private void pushConsoleMessage(String message){
+        String actualConsole = mConsole.getText().toString();
+        mConsole.setText(message + "\n"+ actualConsole);
+    }
+
 
     private final SkyController2Drone.Listener mSkyController2Listener = new SkyController2Drone.Listener() {
         @Override
