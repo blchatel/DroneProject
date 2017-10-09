@@ -98,7 +98,6 @@ android:layout_height="match_parent">
             android:layout_alignParentBottom="true"
             android:background="@android:color/black"
             android:inputType="none"
-            android:maxLines="50"
             android:scrollbarAlwaysDrawHorizontalTrack="false"
             android:scrollbarAlwaysDrawVerticalTrack="false"
             android:scrollbars="vertical"

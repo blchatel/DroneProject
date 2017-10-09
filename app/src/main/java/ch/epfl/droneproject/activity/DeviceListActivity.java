@@ -118,10 +118,6 @@ public class DeviceListActivity extends AppCompatActivity{
                 ARDiscoveryDeviceService service = (ARDiscoveryDeviceService)mAdapter.getItem(position);
                 ARDISCOVERY_PRODUCT_ENUM product = ARDiscoveryService.getProductFromProductID(service.getProductID());
                 switch (product) {
-                    case ARDISCOVERY_PRODUCT_BEBOP_2:
-                        Log.e("BOBOP","Switch to BobopActivity");
-                        intent = new Intent(DeviceListActivity.this, BebopActivity.class);
-                        break;
                     case ARDISCOVERY_PRODUCT_SKYCONTROLLER_2:
                         intent = new Intent(DeviceListActivity.this, SkyController2Activity.class);
                         break;

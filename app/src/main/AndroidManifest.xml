@@ -23,11 +23,9 @@
                 <category android:name="android.intent.category.LAUNCHER" />
             </intent-filter>
         </activity>
-        <activity android:name=".activity.DeviceListActivity"></activity>
         <activity
-            android:name=".activity.BebopActivity"
-            android:configChanges="orientation|keyboardHidden"
-            android:screenOrientation="landscape"></activity>
+            android:name=".activity.DeviceListActivity"
+            android:screenOrientation="portrait"></activity>
         <activity
             android:name=".activity.SkyController2Activity"
             android:configChanges="orientation|keyboardHidden"
