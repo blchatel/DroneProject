@@ -157,6 +157,7 @@ public class SkyController2Drone {
             ARDiscoveryDevice discoveryDevice = createDiscoveryDevice(deviceService);
             if (discoveryDevice != null) {
                 mDeviceController = createDeviceController(discoveryDevice);
+                mSKEModule = new SkyControllerExtensionModule(context, mDeviceController,  mSkyController2State);
                 discoveryDevice.dispose();
             }
 

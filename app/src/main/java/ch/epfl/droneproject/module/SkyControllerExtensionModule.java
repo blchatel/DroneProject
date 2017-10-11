@@ -1,5 +1,7 @@
 package ch.epfl.droneproject.module;
 
+import android.content.Context;
+
 import com.parrot.arsdk.arcommands.ARCOMMANDS_ARDRONE3_ANIMATIONS_FLIP_DIRECTION_ENUM;
 import com.parrot.arsdk.arcontroller.ARCONTROLLER_DEVICE_STATE_ENUM;
 import com.parrot.arsdk.arcontroller.ARDeviceController;
@@ -8,8 +10,11 @@ import ch.epfl.droneproject.drone.ConfigDrone;
 
 public class SkyControllerExtensionModule {
 
+
+    private Context mContext;
     private ARDeviceController mDeviceController;
     private ARCONTROLLER_DEVICE_STATE_ENUM mSkyController2State;
+    private FlightPlanModule mFlightPlanModule;
 
 
     /**
@@ -17,9 +22,11 @@ public class SkyControllerExtensionModule {
      * @param deviceController
      * @param skyController2State
      */
-    public SkyControllerExtensionModule(ARDeviceController deviceController, ARCONTROLLER_DEVICE_STATE_ENUM skyController2State) {
+    public SkyControllerExtensionModule(Context context, ARDeviceController deviceController, ARCONTROLLER_DEVICE_STATE_ENUM skyController2State) {
+        this.mContext = context;
         this.mDeviceController = deviceController;
         this.mSkyController2State = skyController2State;
+        this.mFlightPlanModule = new FlightPlanModule(context);
     }
 
     public void setDroneConfig(ConfigDrone config){
