@@ -7,6 +7,7 @@
 
     <string name="action_settings">Settings</string>
     <string name="title_activity_maps">Map</string>
+    <string name="logo_content">Logo EPFL</string>
 
 
     <string name="connection">Connection ...</string>
@@ -18,4 +19,9 @@
     <string name="download">Download</string>
     <string name="downloadMedia">Downloading medias</string>
     <string name="defaultBtn">Button</string>
+    <string name="droneBattery">Drone Battery: </string>
+    <string name="controllerBattery">Skycontroller Battery: </string>
+    <string name="defaultBattery">XXX%</string>
+    <string name="waiting">Waiting for a Drone</string>
+
 </resources>

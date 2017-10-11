@@ -19,7 +19,7 @@
             android:layout_centerHorizontal="false"
             android:layout_centerInParent="true"
             android:layout_centerVertical="false"
-            tools:visibility="visible" />
+            tools:visibility="gone" />
 
         <TextView
             android:id="@+id/progressText"
@@ -27,7 +27,7 @@
             android:layout_height="wrap_content"
             android:layout_centerInParent="true"
             android:paddingTop="100sp"
-            android:text="TextView" />
+            android:visibility="gone" />
 
         <android.support.v4.view.ViewPager
             android:id="@+id/pager"
@@ -58,24 +58,31 @@
 
         <Button
             android:id="@+id/downloadBt"
+            style="@style/Widget.AppCompat.Button.Borderless"
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
             android:layout_weight="1"
             android:text="@string/download" />
+
         <Button
             android:id="@+id/button2"
+            style="@style/Widget.AppCompat.Button.Borderless"
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
             android:layout_weight="1"
             android:text="@string/defaultBtn" />
+
         <Button
             android:id="@+id/button3"
+            style="@style/Widget.AppCompat.Button.Borderless"
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
             android:layout_weight="1"
             android:text="@string/defaultBtn" />
+
         <Button
             android:id="@+id/button4"
+            style="@style/Widget.AppCompat.Button.Borderless"
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
             android:layout_weight="1"
