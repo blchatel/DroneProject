@@ -119,7 +119,7 @@ public class DeviceListActivity extends AppCompatActivity{
                 ARDISCOVERY_PRODUCT_ENUM product = ARDiscoveryService.getProductFromProductID(service.getProductID());
                 switch (product) {
                     case ARDISCOVERY_PRODUCT_SKYCONTROLLER_2:
-                        intent = new Intent(DeviceListActivity.this, SkyController2Activity.class);
+                        intent = new Intent(DeviceListActivity.this, SkyControllerActivity.class);
                         break;
                     default:
                         Log.e(TAG, "The type " + product + " is not supported by this sample");

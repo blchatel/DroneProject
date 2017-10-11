@@ -3,13 +3,15 @@ package ch.epfl.droneproject.activity;
 import android.app.ProgressDialog;
 import android.content.DialogInterface;
 import android.content.Intent;
-import android.os.Bundle;
+import android.support.v4.app.Fragment;
+import android.support.v4.app.FragmentManager;
+import android.support.v4.app.FragmentStatePagerAdapter;
+import android.support.v4.view.ViewPager;
 import android.support.v7.app.AppCompatActivity;
+import android.os.Bundle;
 import android.util.Log;
 import android.view.View;
 import android.widget.Button;
-import android.widget.EditText;
-import android.widget.TextView;
 
 import com.parrot.arsdk.arcommands.ARCOMMANDS_ARDRONE3_MEDIARECORDEVENT_PICTUREEVENTCHANGED_ERROR_ENUM;
 import com.parrot.arsdk.arcommands.ARCOMMANDS_ARDRONE3_PILOTINGSTATE_FLYINGSTATECHANGED_STATE_ENUM;
@@ -18,39 +20,32 @@ import com.parrot.arsdk.arcontroller.ARControllerCodec;
 import com.parrot.arsdk.arcontroller.ARFrame;
 import com.parrot.arsdk.ardiscovery.ARDiscoveryDeviceService;
 
-import java.io.BufferedReader;
-import java.io.IOException;
-import java.io.InputStreamReader;
-
 import ch.epfl.droneproject.R;
 import ch.epfl.droneproject.drone.SkyController2Drone;
-import ch.epfl.droneproject.view.BebopVideoView;
-import ch.epfl.droneproject.view.ConsoleView;
 
 
-public class SkyController2Activity extends AppCompatActivity {
-    private static final String TAG = "SkyController2Activity";
+public class SkyControllerActivity extends AppCompatActivity {
+
+    private static final String TAG = "SkyControllerActivity";
     private SkyController2Drone mSkyController2Drone;
 
     private ProgressDialog mConnectionProgressDialog;
     private ProgressDialog mDownloadProgressDialog;
 
-    private BebopVideoView mVideoView;
+    private VideoFragment mVideoFragment;
+    private MapsFragment mMapFragment;
 
-    private TextView mDroneBatteryLabel;
-    private TextView mSkyController2BatteryLabel;
-    private TextView mDroneConnectionLabel;
     private Button mDownloadBt;
-    private ConsoleView mConsole;
-
-
     private int mNbMaxDownload;
     private int mCurrentDownloadIndex;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
-        setContentView(R.layout.activity_skycontroller2);
+        setContentView(R.layout.activity_sky_controller);
+
+        final ViewPager viewPager = (ViewPager) findViewById(R.id.pager);
+        viewPager.setAdapter(new PagerAdapter(viewPager, getSupportFragmentManager()));
 
         initIHM();
 
@@ -58,7 +53,6 @@ public class SkyController2Activity extends AppCompatActivity {
         ARDiscoveryDeviceService service = intent.getParcelableExtra(DeviceListActivity.EXTRA_DEVICE_SERVICE);
         mSkyController2Drone = new SkyController2Drone(this, service);
         mSkyController2Drone.addListener(mSkyController2Listener);
-
     }
 
     @Override
@@ -106,8 +100,8 @@ public class SkyController2Activity extends AppCompatActivity {
         super.onDestroy();
     }
 
+
     private void initIHM() {
-        mVideoView = (BebopVideoView) findViewById(R.id.videoView);
 
         findViewById(R.id.emergencyBt).setOnClickListener(new View.OnClickListener() {
             public void onClick(View v) {
@@ -121,7 +115,7 @@ public class SkyController2Activity extends AppCompatActivity {
             public void onClick(View v) {
                 mSkyController2Drone.getLastFlightMedias();
 
-                mDownloadProgressDialog = new ProgressDialog(SkyController2Activity.this, R.style.AppCompatAlertDialogStyle);
+                mDownloadProgressDialog = new ProgressDialog(SkyControllerActivity.this, R.style.AppCompatAlertDialogStyle);
                 mDownloadProgressDialog.setIndeterminate(true);
                 mDownloadProgressDialog.setMessage("Fetching medias");
                 mDownloadProgressDialog.setCancelable(false);
@@ -134,17 +128,59 @@ public class SkyController2Activity extends AppCompatActivity {
                 mDownloadProgressDialog.show();
             }
         });
+    }
 
-        mSkyController2BatteryLabel = (TextView) findViewById(R.id.skyBatteryLabel);
-        mDroneBatteryLabel = (TextView) findViewById(R.id.droneBatteryLabel);
 
-        mDroneConnectionLabel = (TextView) findViewById(R.id.droneConnectionLabel);
 
-        mConsole = (ConsoleView) findViewById(R.id.console);
+    private class PagerAdapter extends FragmentStatePagerAdapter {
 
-        for (int i = 0; i< 100; i++){
-            mConsole.push("Message number "+i);
+        private static final int NUM_OF_TAB = 2;
+
+        private PagerAdapter(final ViewPager pager, FragmentManager fm) {
+            super(fm);
+
+            pager.addOnPageChangeListener(new ViewPager.OnPageChangeListener() {
+
+                @Override
+                public void onPageSelected(int position) {
+                    if (position == getCount()-1){
+                      pager.setCurrentItem(0, true);
+                    }
+                }
+                @Override
+                public void onPageScrolled(int position, float positionOffset, int positionOffsetPixels) {
+                    // TODO Auto-generated method stub
+                }
+                @Override
+                public void onPageScrollStateChanged(int state) {
+                    // TODO Auto-generated method stub
+                }
+            });
         }
+
+        @Override
+        public Fragment getItem(int position) {
+
+            switch (position) {
+                case 0:
+                    mVideoFragment = new VideoFragment();
+                    Log.e("RRR", "ECREATE");
+                    return mVideoFragment;
+                case 1:
+                    mMapFragment = new MapsFragment();
+                    return mMapFragment;
+                case 2:
+                    return new Fragment();
+                default:
+                    return null;
+            }
+        }
+        @Override
+        public int getCount() {
+            return NUM_OF_TAB+1;
+        }
+
+
     }
 
     private final SkyController2Drone.Listener mSkyController2Listener = new SkyController2Drone.Listener() {
@@ -156,7 +192,7 @@ public class SkyController2Activity extends AppCompatActivity {
                     mConnectionProgressDialog.dismiss();
                     // if no drone is connected, display a message
                     if (!ARCONTROLLER_DEVICE_STATE_ENUM.ARCONTROLLER_DEVICE_STATE_RUNNING.equals(mSkyController2Drone.getDroneConnectionState())) {
-                        mDroneConnectionLabel.setVisibility(View.VISIBLE);
+                        mVideoFragment.makeConnectionLabelVisible(true);
                     }
                     break;
 
@@ -176,23 +212,22 @@ public class SkyController2Activity extends AppCompatActivity {
             switch (state)
             {
                 case ARCONTROLLER_DEVICE_STATE_RUNNING:
-                    mDroneConnectionLabel.setVisibility(View.GONE);
+                    mVideoFragment.makeConnectionLabelVisible(false);
                     break;
-
                 default:
-                    mDroneConnectionLabel.setVisibility(View.VISIBLE);
+                    mVideoFragment.makeConnectionLabelVisible(true);
                     break;
             }
         }
 
         @Override
         public void onSkyController2BatteryChargeChanged(int batteryPercentage) {
-            mSkyController2BatteryLabel.setText(String.format("%d%%", batteryPercentage));
+            mVideoFragment.setControllerBatteryLabel(String.format("%d%%", batteryPercentage));
         }
 
         @Override
         public void onDroneBatteryChargeChanged(int batteryPercentage) {
-            mDroneBatteryLabel.setText(String.format("%d%%", batteryPercentage));
+            mVideoFragment.setDroneBatteryLabel(String.format("%d%%", batteryPercentage));
         }
 
         @Override
@@ -217,12 +252,12 @@ public class SkyController2Activity extends AppCompatActivity {
 
         @Override
         public void configureDecoder(ARControllerCodec codec) {
-            mVideoView.configureDecoder(codec);
+            mVideoFragment.configureDecoder(codec);
         }
 
         @Override
         public void onFrameReceived(ARFrame frame) {
-            mVideoView.displayFrame(frame);
+            mVideoFragment.displayFrame(frame);
         }
 
         @Override
@@ -233,7 +268,7 @@ public class SkyController2Activity extends AppCompatActivity {
             mCurrentDownloadIndex = 1;
 
             if (nbMedias > 0) {
-                mDownloadProgressDialog = new ProgressDialog(SkyController2Activity.this, R.style.AppCompatAlertDialogStyle);
+                mDownloadProgressDialog = new ProgressDialog(SkyControllerActivity.this, R.style.AppCompatAlertDialogStyle);
                 mDownloadProgressDialog.setIndeterminate(false);
                 mDownloadProgressDialog.setProgressStyle(ProgressDialog.STYLE_HORIZONTAL);
                 mDownloadProgressDialog.setMessage("Downloading medias");
@@ -267,4 +302,5 @@ public class SkyController2Activity extends AppCompatActivity {
             }
         }
     };
+
 }
