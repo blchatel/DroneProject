@@ -24,19 +24,14 @@ import ch.epfl.droneproject.R;
 
 public class MapsFragment extends Fragment implements OnMapReadyCallback{
 
-    public static final int FILE_SELECT_CODE = 1;
-    public static final String TAG = "MAPS";
-
     private View mView;
-
 
     private GoogleMap mMap;
 
-    private final boolean mDrawPath = true;
-    private final boolean mDrawFixes = true;
+    private static final boolean DRAW_PATH = true;
+    private static final boolean DRAW_FIXES = true;
 
     private PolylineOptions fixList;
-
 
 
     @Override
@@ -101,11 +96,11 @@ public class MapsFragment extends Fragment implements OnMapReadyCallback{
 
         mMap.clear();
 
-        if(mDrawPath) {
+        if(DRAW_PATH) {
             mMap.addPolyline(fixList);
         }
 
-        if(mDrawFixes) {
+        if(DRAW_FIXES) {
             List<LatLng> fL = fixList.getPoints();
 
             for (int i = 0; i < fL.size(); i++) {

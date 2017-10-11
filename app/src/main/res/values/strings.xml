@@ -9,9 +9,13 @@
     <string name="title_activity_maps">Map</string>
 
 
+    <string name="connection">Connection ...</string>
+    <string name="disconnection">Disconnection ...</string>
+    <string name="fetch">Fetching medias</string>
     <string name="emergency">Emergency</string>
     <string name="open">Open</string>
     <string name="clean">Clean</string>
     <string name="download">Download</string>
+    <string name="downloadMedia">Downloading medias</string>
     <string name="defaultBtn">Button</string>
 </resources>

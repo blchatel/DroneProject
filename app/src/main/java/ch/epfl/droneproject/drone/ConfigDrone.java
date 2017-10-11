@@ -125,7 +125,7 @@ public class ConfigDrone {
      * @param bankedTurn: (byte) [1|0]
      * @param hasHullProtection: (byte) [1|0]
      */
-    public ConfigDrone(float maxAlt, float maxDistance, byte shouldNotFlyOver, float maxTilt,
+    private ConfigDrone(float maxAlt, float maxDistance, byte shouldNotFlyOver, float maxTilt,
                        float maxTiltS, float maxVS, float maxRS, float maxAutonomousHS, float maxAutonomousVS,
                        float maxAutonomousHA, float maxAutonomousVA, float maxAutonomousRS,
                        byte bankedTurn, byte hasHullProtection) {

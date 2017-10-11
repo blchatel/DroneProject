@@ -1,7 +1,5 @@
 package ch.epfl.droneproject.activity;
 
-import android.app.ProgressDialog;
-import android.content.DialogInterface;
 import android.content.Intent;
 import android.support.v4.app.Fragment;
 import android.support.v4.app.FragmentManager;
@@ -12,6 +10,8 @@ import android.os.Bundle;
 import android.util.Log;
 import android.view.View;
 import android.widget.Button;
+import android.widget.ProgressBar;
+import android.widget.TextView;
 
 import com.parrot.arsdk.arcommands.ARCOMMANDS_ARDRONE3_MEDIARECORDEVENT_PICTUREEVENTCHANGED_ERROR_ENUM;
 import com.parrot.arsdk.arcommands.ARCOMMANDS_ARDRONE3_PILOTINGSTATE_FLYINGSTATECHANGED_STATE_ENUM;
@@ -19,6 +19,8 @@ import com.parrot.arsdk.arcontroller.ARCONTROLLER_DEVICE_STATE_ENUM;
 import com.parrot.arsdk.arcontroller.ARControllerCodec;
 import com.parrot.arsdk.arcontroller.ARFrame;
 import com.parrot.arsdk.ardiscovery.ARDiscoveryDeviceService;
+
+import java.util.Locale;
 
 import ch.epfl.droneproject.R;
 import ch.epfl.droneproject.drone.SkyController2Drone;
@@ -29,8 +31,8 @@ public class SkyControllerActivity extends AppCompatActivity {
     private static final String TAG = "SkyControllerActivity";
     private SkyController2Drone mSkyController2Drone;
 
-    private ProgressDialog mConnectionProgressDialog;
-    private ProgressDialog mDownloadProgressDialog;
+    private ProgressBar progressBar;
+    private TextView progressText;
 
     private VideoFragment mVideoFragment;
     private MapsFragment mMapFragment;
@@ -63,12 +65,8 @@ public class SkyControllerActivity extends AppCompatActivity {
         if ((mSkyController2Drone != null) &&
                 !(ARCONTROLLER_DEVICE_STATE_ENUM.ARCONTROLLER_DEVICE_STATE_RUNNING.equals(mSkyController2Drone.getSkyController2ConnectionState())))
         {
-            mConnectionProgressDialog = new ProgressDialog(this, R.style.AppCompatAlertDialogStyle);
-            mConnectionProgressDialog.setIndeterminate(true);
-            mConnectionProgressDialog.setMessage("Connecting ...");
-            mConnectionProgressDialog.setCancelable(false);
-            mConnectionProgressDialog.show();
 
+            showProgressBar(getResources().getString(R.string.connection));
             // if the connection to the Bebop fails, finish the activity
             if (!mSkyController2Drone.connect()) {
                 finish();
@@ -80,11 +78,7 @@ public class SkyControllerActivity extends AppCompatActivity {
     public void onBackPressed() {
         if (mSkyController2Drone != null)
         {
-            mConnectionProgressDialog = new ProgressDialog(this, R.style.AppCompatAlertDialogStyle);
-            mConnectionProgressDialog.setIndeterminate(true);
-            mConnectionProgressDialog.setMessage("Disconnecting ...");
-            mConnectionProgressDialog.setCancelable(false);
-            mConnectionProgressDialog.show();
+            showProgressBar(getResources().getString(R.string.disconnection));
 
             if (!mSkyController2Drone.disconnect()) {
                 finish();
@@ -103,6 +97,9 @@ public class SkyControllerActivity extends AppCompatActivity {
 
     private void initIHM() {
 
+        progressBar = (ProgressBar) findViewById(R.id.progressBar);
+        progressText = (TextView) findViewById(R.id.progressText);
+
         findViewById(R.id.emergencyBt).setOnClickListener(new View.OnClickListener() {
             public void onClick(View v) {
                 mSkyController2Drone.skeModule().emergency();
@@ -113,21 +110,19 @@ public class SkyControllerActivity extends AppCompatActivity {
         mDownloadBt.setEnabled(false);
         mDownloadBt.setOnClickListener(new View.OnClickListener() {
             public void onClick(View v) {
-                mSkyController2Drone.getLastFlightMedias();
-
-                mDownloadProgressDialog = new ProgressDialog(SkyControllerActivity.this, R.style.AppCompatAlertDialogStyle);
-                mDownloadProgressDialog.setIndeterminate(true);
-                mDownloadProgressDialog.setMessage("Fetching medias");
-                mDownloadProgressDialog.setCancelable(false);
-                mDownloadProgressDialog.setButton(DialogInterface.BUTTON_NEGATIVE, "Cancel", new DialogInterface.OnClickListener() {
-                    @Override
-                    public void onClick(DialogInterface dialog, int which) {
-                        mSkyController2Drone.cancelGetLastFlightMedias();
-                    }
-                });
-                mDownloadProgressDialog.show();
+                showProgressBar(getResources().getString(R.string.fetch));
             }
         });
+    }
+
+    private void showProgressBar(String text){
+        progressBar.setVisibility(View.VISIBLE);// To Show ProgressBar
+        progressText.setText(text);
+        progressText.setVisibility(View.VISIBLE);
+    }
+    private void hideProgressBar(){
+        progressBar.setVisibility(View.GONE);// To Show ProgressBar
+        progressText.setVisibility(View.GONE);
     }
 
 
@@ -144,16 +139,14 @@ public class SkyControllerActivity extends AppCompatActivity {
                 @Override
                 public void onPageSelected(int position) {
                     if (position == getCount()-1){
-                      pager.setCurrentItem(0, true);
+                        pager.setCurrentItem(0, true);
                     }
                 }
                 @Override
                 public void onPageScrolled(int position, float positionOffset, int positionOffsetPixels) {
-                    // TODO Auto-generated method stub
                 }
                 @Override
                 public void onPageScrollStateChanged(int state) {
-                    // TODO Auto-generated method stub
                 }
             });
         }
@@ -189,7 +182,7 @@ public class SkyControllerActivity extends AppCompatActivity {
             switch (state)
             {
                 case ARCONTROLLER_DEVICE_STATE_RUNNING:
-                    mConnectionProgressDialog.dismiss();
+                    hideProgressBar();
                     // if no drone is connected, display a message
                     if (!ARCONTROLLER_DEVICE_STATE_ENUM.ARCONTROLLER_DEVICE_STATE_RUNNING.equals(mSkyController2Drone.getDroneConnectionState())) {
                         mVideoFragment.makeConnectionLabelVisible(true);
@@ -198,7 +191,7 @@ public class SkyControllerActivity extends AppCompatActivity {
 
                 case ARCONTROLLER_DEVICE_STATE_STOPPED:
                     // if the deviceController is stopped, go back to the previous activity
-                    mConnectionProgressDialog.dismiss();
+                    hideProgressBar();
                     finish();
                     break;
 
@@ -222,12 +215,12 @@ public class SkyControllerActivity extends AppCompatActivity {
 
         @Override
         public void onSkyController2BatteryChargeChanged(int batteryPercentage) {
-            mVideoFragment.setControllerBatteryLabel(String.format("%d%%", batteryPercentage));
+            mVideoFragment.setControllerBatteryLabel(String.format(Locale.getDefault(),"%d%%", batteryPercentage));
         }
 
         @Override
         public void onDroneBatteryChargeChanged(int batteryPercentage) {
-            mVideoFragment.setDroneBatteryLabel(String.format("%d%%", batteryPercentage));
+            mVideoFragment.setDroneBatteryLabel(String.format(Locale.getDefault(), "%d%%", batteryPercentage));
         }
 
         @Override
@@ -262,43 +255,27 @@ public class SkyControllerActivity extends AppCompatActivity {
 
         @Override
         public void onMatchingMediasFound(int nbMedias) {
-            mDownloadProgressDialog.dismiss();
+
+            hideProgressBar();
 
             mNbMaxDownload = nbMedias;
             mCurrentDownloadIndex = 1;
 
             if (nbMedias > 0) {
-                mDownloadProgressDialog = new ProgressDialog(SkyControllerActivity.this, R.style.AppCompatAlertDialogStyle);
-                mDownloadProgressDialog.setIndeterminate(false);
-                mDownloadProgressDialog.setProgressStyle(ProgressDialog.STYLE_HORIZONTAL);
-                mDownloadProgressDialog.setMessage("Downloading medias");
-                mDownloadProgressDialog.setMax(mNbMaxDownload * 100);
-                mDownloadProgressDialog.setSecondaryProgress(mCurrentDownloadIndex * 100);
-                mDownloadProgressDialog.setProgress(0);
-                mDownloadProgressDialog.setCancelable(false);
-                mDownloadProgressDialog.setButton(DialogInterface.BUTTON_NEGATIVE, "Cancel", new DialogInterface.OnClickListener() {
-                    @Override
-                    public void onClick(DialogInterface dialog, int which) {
-                        mSkyController2Drone.cancelGetLastFlightMedias();
-                    }
-                });
-                mDownloadProgressDialog.show();
+                showProgressBar(getResources().getString(R.string.downloadMedia));
             }
         }
 
         @Override
         public void onDownloadProgressed(String mediaName, int progress) {
-            mDownloadProgressDialog.setProgress(((mCurrentDownloadIndex - 1) * 100) + progress);
         }
 
         @Override
         public void onDownloadComplete(String mediaName) {
             mCurrentDownloadIndex++;
-            mDownloadProgressDialog.setSecondaryProgress(mCurrentDownloadIndex * 100);
 
             if (mCurrentDownloadIndex > mNbMaxDownload) {
-                mDownloadProgressDialog.dismiss();
-                mDownloadProgressDialog = null;
+                hideProgressBar();
             }
         }
     };

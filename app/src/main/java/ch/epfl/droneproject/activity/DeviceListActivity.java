@@ -223,8 +223,8 @@ public class DeviceListActivity extends AppCompatActivity{
 
 
     /** NEED TO UNDERSTAND USE OF THIS CLASS*/
-    static class ViewHolder {
-        public TextView text;
+    private static class ViewHolder {
+        TextView text;
     }
 
     /** ListView personalized adapter */
