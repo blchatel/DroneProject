@@ -13,12 +13,11 @@ public class MainActivity extends AppCompatActivity {
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
+        super.onCreate(savedInstanceState);
+        setContentView(R.layout.activity_main);
 
         try {
             synchronized(this){
-                super.onCreate(savedInstanceState);
-                setContentView(R.layout.activity_main);
-
                 wait(LAUNCHING_TIME);
                 Intent i = new Intent(getApplicationContext(), DeviceListActivity.class);
                 startActivity(i);
