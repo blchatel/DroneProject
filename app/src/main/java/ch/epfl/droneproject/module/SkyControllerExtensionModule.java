@@ -13,8 +13,9 @@ public class SkyControllerExtensionModule {
 
     private Context mContext;
     private ARDeviceController mDeviceController;
-    private ARCONTROLLER_DEVICE_STATE_ENUM mSkyController2State;
+    private ARCONTROLLER_DEVICE_STATE_ENUM mSkyControllerState;
     private FlightPlanModule mFlightPlanModule;
+    private AutoPilotModule mAutoPilot;
 
 
     /**
@@ -25,14 +26,14 @@ public class SkyControllerExtensionModule {
     public SkyControllerExtensionModule(Context context, ARDeviceController deviceController, ARCONTROLLER_DEVICE_STATE_ENUM skyController2State) {
         this.mContext = context;
         this.mDeviceController = deviceController;
-        this.mSkyController2State = skyController2State;
+        this.mSkyControllerState = skyController2State;
         this.mFlightPlanModule = new FlightPlanModule(context);
     }
 
     public void setDroneConfig(ConfigDrone config){
 
         if ((mDeviceController != null) &&
-                (mSkyController2State.equals(ARCONTROLLER_DEVICE_STATE_ENUM.ARCONTROLLER_DEVICE_STATE_RUNNING)) &&
+                (mSkyControllerState.equals(ARCONTROLLER_DEVICE_STATE_ENUM.ARCONTROLLER_DEVICE_STATE_RUNNING)) &&
                 (mDeviceController.getExtensionState().equals(ARCONTROLLER_DEVICE_STATE_ENUM.ARCONTROLLER_DEVICE_STATE_RUNNING))) {
 
             mDeviceController.getFeatureARDrone3().sendPilotingSettingsMaxAltitude(config.getMaxAlt());
@@ -67,7 +68,7 @@ public class SkyControllerExtensionModule {
      */
     public void flatTrim(){
         if ((mDeviceController != null) &&
-                (mSkyController2State.equals(ARCONTROLLER_DEVICE_STATE_ENUM.ARCONTROLLER_DEVICE_STATE_RUNNING)) &&
+                (mSkyControllerState.equals(ARCONTROLLER_DEVICE_STATE_ENUM.ARCONTROLLER_DEVICE_STATE_RUNNING)) &&
                 (mDeviceController.getExtensionState().equals(ARCONTROLLER_DEVICE_STATE_ENUM.ARCONTROLLER_DEVICE_STATE_RUNNING))) {
             mDeviceController.getFeatureARDrone3().sendPilotingFlatTrim();
         }
@@ -108,7 +109,7 @@ public class SkyControllerExtensionModule {
      */
     public void setPCDM(byte flag, byte roll, byte pitch, byte yaw, byte gaz, int timestampAndSeqNum){
         if ((mDeviceController != null) &&
-                (mSkyController2State.equals(ARCONTROLLER_DEVICE_STATE_ENUM.ARCONTROLLER_DEVICE_STATE_RUNNING)) &&
+                (mSkyControllerState.equals(ARCONTROLLER_DEVICE_STATE_ENUM.ARCONTROLLER_DEVICE_STATE_RUNNING)) &&
                 (mDeviceController.getExtensionState().equals(ARCONTROLLER_DEVICE_STATE_ENUM.ARCONTROLLER_DEVICE_STATE_RUNNING))) {
             mDeviceController.getFeatureARDrone3().setPilotingPCMD(flag, roll, pitch, yaw, gaz, timestampAndSeqNum);
         }
@@ -123,7 +124,7 @@ public class SkyControllerExtensionModule {
      */
     public void takeOff() {
         if ((mDeviceController != null) &&
-                (mSkyController2State.equals(ARCONTROLLER_DEVICE_STATE_ENUM.ARCONTROLLER_DEVICE_STATE_RUNNING)) &&
+                (mSkyControllerState.equals(ARCONTROLLER_DEVICE_STATE_ENUM.ARCONTROLLER_DEVICE_STATE_RUNNING)) &&
                 (mDeviceController.getExtensionState().equals(ARCONTROLLER_DEVICE_STATE_ENUM.ARCONTROLLER_DEVICE_STATE_RUNNING))) {
             mDeviceController.getFeatureARDrone3().sendPilotingTakeOff();
         }
@@ -138,7 +139,7 @@ public class SkyControllerExtensionModule {
      */
     public void land() {
         if ((mDeviceController != null) &&
-                (mSkyController2State.equals(ARCONTROLLER_DEVICE_STATE_ENUM.ARCONTROLLER_DEVICE_STATE_RUNNING)) &&
+                (mSkyControllerState.equals(ARCONTROLLER_DEVICE_STATE_ENUM.ARCONTROLLER_DEVICE_STATE_RUNNING)) &&
                 (mDeviceController.getExtensionState().equals(ARCONTROLLER_DEVICE_STATE_ENUM.ARCONTROLLER_DEVICE_STATE_RUNNING))) {
             mDeviceController.getFeatureARDrone3().sendPilotingLanding();
         }
@@ -154,7 +155,7 @@ public class SkyControllerExtensionModule {
      */
     public void emergency() {
         if ((mDeviceController != null) &&
-                (mSkyController2State.equals(ARCONTROLLER_DEVICE_STATE_ENUM.ARCONTROLLER_DEVICE_STATE_RUNNING)) &&
+                (mSkyControllerState.equals(ARCONTROLLER_DEVICE_STATE_ENUM.ARCONTROLLER_DEVICE_STATE_RUNNING)) &&
                 (mDeviceController.getExtensionState().equals(ARCONTROLLER_DEVICE_STATE_ENUM.ARCONTROLLER_DEVICE_STATE_RUNNING))) {
             mDeviceController.getFeatureARDrone3().sendPilotingEmergency();
         }
@@ -175,7 +176,7 @@ public class SkyControllerExtensionModule {
      */
     public void goHome(byte start){
         if ((mDeviceController != null) &&
-                (mSkyController2State.equals(ARCONTROLLER_DEVICE_STATE_ENUM.ARCONTROLLER_DEVICE_STATE_RUNNING)) &&
+                (mSkyControllerState.equals(ARCONTROLLER_DEVICE_STATE_ENUM.ARCONTROLLER_DEVICE_STATE_RUNNING)) &&
                 (mDeviceController.getExtensionState().equals(ARCONTROLLER_DEVICE_STATE_ENUM.ARCONTROLLER_DEVICE_STATE_RUNNING))) {
             mDeviceController.getFeatureARDrone3().sendPilotingNavigateHome(start);
         }
@@ -197,7 +198,7 @@ public class SkyControllerExtensionModule {
      */
     public void moveBy(float dX, float dY, float dZ, float dPsi) {
         if ((mDeviceController != null) &&
-                (mSkyController2State.equals(ARCONTROLLER_DEVICE_STATE_ENUM.ARCONTROLLER_DEVICE_STATE_RUNNING)) &&
+                (mSkyControllerState.equals(ARCONTROLLER_DEVICE_STATE_ENUM.ARCONTROLLER_DEVICE_STATE_RUNNING)) &&
                 (mDeviceController.getExtensionState().equals(ARCONTROLLER_DEVICE_STATE_ENUM.ARCONTROLLER_DEVICE_STATE_RUNNING))) {
             mDeviceController.getFeatureARDrone3().sendPilotingMoveBy(dX, dY, dZ, dPsi);
         }
@@ -217,7 +218,7 @@ public class SkyControllerExtensionModule {
      */
     public void makeAFlip(ARCOMMANDS_ARDRONE3_ANIMATIONS_FLIP_DIRECTION_ENUM direction){
         if ((mDeviceController != null) &&
-                (mSkyController2State.equals(ARCONTROLLER_DEVICE_STATE_ENUM.ARCONTROLLER_DEVICE_STATE_RUNNING)) &&
+                (mSkyControllerState.equals(ARCONTROLLER_DEVICE_STATE_ENUM.ARCONTROLLER_DEVICE_STATE_RUNNING)) &&
                 (mDeviceController.getExtensionState().equals(ARCONTROLLER_DEVICE_STATE_ENUM.ARCONTROLLER_DEVICE_STATE_RUNNING))) {
             mDeviceController.getFeatureARDrone3().sendAnimationsFlip(direction);
         }

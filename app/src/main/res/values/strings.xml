@@ -9,7 +9,6 @@
     <string name="title_activity_maps">Map</string>
     <string name="logo_content">Logo EPFL</string>
 
-
     <string name="connection">Connection ...</string>
     <string name="disconnection">Disconnection ...</string>
     <string name="fetch">Fetching medias</string>
@@ -23,5 +22,12 @@
     <string name="controllerBattery">Skycontroller Battery: </string>
     <string name="defaultBattery">XXX%</string>
     <string name="waiting">Waiting for a Drone</string>
-
+    <string name="save">Save</string>
+    <string name="remove">Remove</string>
+    <string name="lat">Latitude</string>
+    <string name="lon">Longitude</string>
+    <string name="alt">Altitude [m]</string>
+    <string name="yaw">Yaw [degree]</string>
+    <string name="title">Title</string>
+    <string name="close">Close</string>
 </resources>

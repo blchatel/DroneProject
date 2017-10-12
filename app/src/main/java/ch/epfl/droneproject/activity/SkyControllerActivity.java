@@ -23,13 +23,13 @@ import com.parrot.arsdk.ardiscovery.ARDiscoveryDeviceService;
 import java.util.Locale;
 
 import ch.epfl.droneproject.R;
-import ch.epfl.droneproject.drone.SkyController2Drone;
+import ch.epfl.droneproject.drone.SkyControllerDrone;
 
 
 public class SkyControllerActivity extends AppCompatActivity {
 
     private static final String TAG = "SkyControllerActivity";
-    private SkyController2Drone mSkyController2Drone;
+    private SkyControllerDrone mSkyControllerDrone;
 
     private ProgressBar progressBar;
     private TextView progressText;
@@ -53,8 +53,8 @@ public class SkyControllerActivity extends AppCompatActivity {
 
         Intent intent = getIntent();
         ARDiscoveryDeviceService service = intent.getParcelableExtra(DeviceListActivity.EXTRA_DEVICE_SERVICE);
-        mSkyController2Drone = new SkyController2Drone(this, service);
-        mSkyController2Drone.addListener(mSkyController2Listener);
+//        mSkyControllerDrone = new SkyControllerDrone(this, service);
+  //      mSkyControllerDrone.addListener(mSkyControllerListener);
     }
 
     @Override
@@ -62,13 +62,13 @@ public class SkyControllerActivity extends AppCompatActivity {
         super.onStart();
 
         // show a loading view while the bebop drone is connecting
-        if ((mSkyController2Drone != null) &&
-                !(ARCONTROLLER_DEVICE_STATE_ENUM.ARCONTROLLER_DEVICE_STATE_RUNNING.equals(mSkyController2Drone.getSkyController2ConnectionState())))
+        if ((mSkyControllerDrone != null) &&
+                !(ARCONTROLLER_DEVICE_STATE_ENUM.ARCONTROLLER_DEVICE_STATE_RUNNING.equals(mSkyControllerDrone.getSkyControllerConnectionState())))
         {
 
             showProgressBar(getResources().getString(R.string.connection));
             // if the connection to the Bebop fails, finish the activity
-            if (!mSkyController2Drone.connect()) {
+            if (!mSkyControllerDrone.connect()) {
                 finish();
             }
         }
@@ -76,11 +76,11 @@ public class SkyControllerActivity extends AppCompatActivity {
 
     @Override
     public void onBackPressed() {
-        if (mSkyController2Drone != null)
+        if (mSkyControllerDrone != null)
         {
             showProgressBar(getResources().getString(R.string.disconnection));
 
-            if (!mSkyController2Drone.disconnect()) {
+            if (!mSkyControllerDrone.disconnect()) {
                 finish();
             }
         } else {
@@ -90,7 +90,7 @@ public class SkyControllerActivity extends AppCompatActivity {
 
     @Override
     public void onDestroy() {
-        mSkyController2Drone.dispose();
+        //mSkyControllerDrone.dispose();
         super.onDestroy();
     }
 
@@ -102,7 +102,7 @@ public class SkyControllerActivity extends AppCompatActivity {
 
         findViewById(R.id.emergencyBt).setOnClickListener(new View.OnClickListener() {
             public void onClick(View v) {
-                mSkyController2Drone.skeModule().emergency();
+                mSkyControllerDrone.skeModule().emergency();
             }
         });
 
@@ -157,7 +157,6 @@ public class SkyControllerActivity extends AppCompatActivity {
             switch (position) {
                 case 0:
                     mVideoFragment = new VideoFragment();
-                    Log.e("RRR", "ECREATE");
                     return mVideoFragment;
                 case 1:
                     mMapFragment = new MapsFragment();
@@ -172,19 +171,17 @@ public class SkyControllerActivity extends AppCompatActivity {
         public int getCount() {
             return NUM_OF_TAB+1;
         }
-
-
     }
 
-    private final SkyController2Drone.Listener mSkyController2Listener = new SkyController2Drone.Listener() {
+    private final SkyControllerDrone.Listener mSkyControllerListener = new SkyControllerDrone.Listener() {
         @Override
-        public void onSkyController2ConnectionChanged(ARCONTROLLER_DEVICE_STATE_ENUM state) {
+        public void onSkyControllerConnectionChanged(ARCONTROLLER_DEVICE_STATE_ENUM state) {
             switch (state)
             {
                 case ARCONTROLLER_DEVICE_STATE_RUNNING:
                     hideProgressBar();
                     // if no drone is connected, display a message
-                    if (!ARCONTROLLER_DEVICE_STATE_ENUM.ARCONTROLLER_DEVICE_STATE_RUNNING.equals(mSkyController2Drone.getDroneConnectionState())) {
+                    if (!ARCONTROLLER_DEVICE_STATE_ENUM.ARCONTROLLER_DEVICE_STATE_RUNNING.equals(mSkyControllerDrone.getDroneConnectionState())) {
                         mVideoFragment.makeConnectionLabelVisible(true);
                     }
                     break;
@@ -214,7 +211,7 @@ public class SkyControllerActivity extends AppCompatActivity {
         }
 
         @Override
-        public void onSkyController2BatteryChargeChanged(int batteryPercentage) {
+        public void onSkyControllerBatteryChargeChanged(int batteryPercentage) {
             mVideoFragment.setControllerBatteryLabel(String.format(Locale.getDefault(),"%d%%", batteryPercentage));
         }
 

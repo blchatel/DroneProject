@@ -37,16 +37,16 @@ import java.util.List;
 import ch.epfl.droneproject.module.SDCardModule;
 import ch.epfl.droneproject.module.SkyControllerExtensionModule;
 
-public class SkyController2Drone {
-    private static final String TAG = "SkyController2Drone";
+public class SkyControllerDrone {
+    private static final String TAG = "SkyControllerDrone";
 
     public interface Listener {
         /**
-         * Called when the connection to the SkyController2 changes
+         * Called when the connection to the SkyController 2 changes
          * Called in the main thread
-         * @param state the state of the SkyController2
+         * @param state the state of the SkyController 2
          */
-        void onSkyController2ConnectionChanged(ARCONTROLLER_DEVICE_STATE_ENUM state);
+        void onSkyControllerConnectionChanged(ARCONTROLLER_DEVICE_STATE_ENUM state);
 
         /**
          * Called when the connection to the drone changes
@@ -56,11 +56,11 @@ public class SkyController2Drone {
         void onDroneConnectionChanged(ARCONTROLLER_DEVICE_STATE_ENUM state);
 
         /**
-         * Called when the SkyController2 battery charge changes
+         * Called when the SkyController 2 battery charge changes
          * Called in the main thread
          * @param batteryPercentage the battery remaining (in percent)
          */
-        void onSkyController2BatteryChargeChanged(int batteryPercentage);
+        void onSkyControllerBatteryChargeChanged(int batteryPercentage);
 
         /**
          * Called when the battery charge changes
@@ -129,7 +129,7 @@ public class SkyController2Drone {
     private SDCardModule mSDCardModule;
     private SkyControllerExtensionModule mSKEModule;
 
-    private ARCONTROLLER_DEVICE_STATE_ENUM mSkyController2State;
+    private ARCONTROLLER_DEVICE_STATE_ENUM mSkyControllerState;
     private ARCONTROLLER_DEVICE_STATE_ENUM mDroneState;
     private ARCOMMANDS_ARDRONE3_PILOTINGSTATE_FLYINGSTATECHANGED_STATE_ENUM mFlyingState;
     private String mCurrentRunId;
@@ -137,7 +137,7 @@ public class SkyController2Drone {
     private ARUtilsManager mFtpListManager;
     private ARUtilsManager mFtpQueueManager;
 
-    public SkyController2Drone(Context context, @NonNull ARDiscoveryDeviceService deviceService) {
+    public SkyControllerDrone(Context context, @NonNull ARDiscoveryDeviceService deviceService) {
 
         mContext = context;
         mListeners = new ArrayList<>();
@@ -146,7 +146,7 @@ public class SkyController2Drone {
         // needed because some callbacks will be called on the main thread
         mHandler = new Handler(context.getMainLooper());
 
-        mSkyController2State = ARCONTROLLER_DEVICE_STATE_ENUM.ARCONTROLLER_DEVICE_STATE_STOPPED;
+        mSkyControllerState = ARCONTROLLER_DEVICE_STATE_ENUM.ARCONTROLLER_DEVICE_STATE_STOPPED;
         mDroneState = ARCONTROLLER_DEVICE_STATE_ENUM.ARCONTROLLER_DEVICE_STATE_STOPPED;
 
         // if the product type of the deviceService match with the types supported
@@ -157,7 +157,7 @@ public class SkyController2Drone {
             ARDiscoveryDevice discoveryDevice = createDiscoveryDevice(deviceService);
             if (discoveryDevice != null) {
                 mDeviceController = createDeviceController(discoveryDevice);
-                mSKEModule = new SkyControllerExtensionModule(context, mDeviceController,  mSkyController2State);
+                mSKEModule = new SkyControllerExtensionModule(context, mDeviceController,  mSkyControllerState);
                 discoveryDevice.dispose();
             }
 
@@ -178,7 +178,7 @@ public class SkyController2Drone {
             }
 
         } else {
-            Log.e(TAG, "DeviceService type is not supported by SkyController2Drone");
+            Log.e(TAG, "DeviceService type is not supported by SkyControllerDrone");
         }
     }
 
@@ -206,11 +206,11 @@ public class SkyController2Drone {
      * Connect to the drone
      * @return true if operation was successful.
      *              Returning true doesn't mean that device is connected.
-     *              You can be informed of the actual connection through {@link Listener#onSkyController2ConnectionChanged}
+     *              You can be informed of the actual connection through {@link Listener#onSkyControllerConnectionChanged}
      */
     public boolean connect() {
         boolean success = false;
-        if ((mDeviceController != null) && (ARCONTROLLER_DEVICE_STATE_ENUM.ARCONTROLLER_DEVICE_STATE_STOPPED.equals(mSkyController2State))) {
+        if ((mDeviceController != null) && (ARCONTROLLER_DEVICE_STATE_ENUM.ARCONTROLLER_DEVICE_STATE_STOPPED.equals(mSkyControllerState))) {
             ARCONTROLLER_ERROR_ENUM error = mDeviceController.start();
             if (error == ARCONTROLLER_ERROR_ENUM.ARCONTROLLER_OK) {
                 success = true;
@@ -223,11 +223,11 @@ public class SkyController2Drone {
      * Disconnect from the drone
      * @return true if operation was successful.
      *              Returning true doesn't mean that device is disconnected.
-     *              You can be informed of the actual disconnection through {@link Listener#onSkyController2ConnectionChanged}
+     *              You can be informed of the actual disconnection through {@link Listener#onSkyControllerConnectionChanged}
      */
     public boolean disconnect() {
         boolean success = false;
-        if ((mDeviceController != null) && (ARCONTROLLER_DEVICE_STATE_ENUM.ARCONTROLLER_DEVICE_STATE_RUNNING.equals(mSkyController2State))) {
+        if ((mDeviceController != null) && (ARCONTROLLER_DEVICE_STATE_ENUM.ARCONTROLLER_DEVICE_STATE_RUNNING.equals(mSkyControllerState))) {
             ARCONTROLLER_ERROR_ENUM error = mDeviceController.stop();
             if (error == ARCONTROLLER_ERROR_ENUM.ARCONTROLLER_OK) {
                 success = true;
@@ -240,8 +240,8 @@ public class SkyController2Drone {
      * Get the current connection state
      * @return the connection state of the drone
      */
-    public ARCONTROLLER_DEVICE_STATE_ENUM getSkyController2ConnectionState() {
-        return mSkyController2State;
+    public ARCONTROLLER_DEVICE_STATE_ENUM getSkyControllerConnectionState() {
+        return mSkyControllerState;
     }
 
     /**
@@ -314,10 +314,10 @@ public class SkyController2Drone {
     }
 
     //region notify listener block
-    private void notifySkyController2ConnectionChanged(ARCONTROLLER_DEVICE_STATE_ENUM state) {
+    private void notifySkyControllerConnectionChanged(ARCONTROLLER_DEVICE_STATE_ENUM state) {
         List<Listener> listenersCpy = new ArrayList<>(mListeners);
         for (Listener listener : listenersCpy) {
-            listener.onSkyController2ConnectionChanged(state);
+            listener.onSkyControllerConnectionChanged(state);
         }
     }
 
@@ -328,10 +328,10 @@ public class SkyController2Drone {
         }
     }
 
-    private void notifySkyController2BatteryChanged(int battery) {
+    private void notifySkyControllerBatteryChanged(int battery) {
         List<Listener> listenersCpy = new ArrayList<>(mListeners);
         for (Listener listener : listenersCpy) {
-            listener.onSkyController2BatteryChargeChanged(battery);
+            listener.onSkyControllerBatteryChargeChanged(battery);
         }
     }
 
@@ -427,11 +427,11 @@ public class SkyController2Drone {
     private final ARDeviceControllerListener mDeviceControllerListener = new ARDeviceControllerListener() {
         @Override
         public void onStateChanged(ARDeviceController deviceController, ARCONTROLLER_DEVICE_STATE_ENUM newState, ARCONTROLLER_ERROR_ENUM error) {
-            mSkyController2State = newState;
+            mSkyControllerState = newState;
             mHandler.post(new Runnable() {
                 @Override
                 public void run() {
-                    notifySkyController2ConnectionChanged(mSkyController2State);
+                    notifySkyControllerConnectionChanged(mSkyControllerState);
                 }
             });
         }
@@ -467,7 +467,7 @@ public class SkyController2Drone {
                     });
                 }
             }
-            // if event received is the skyController2 battery update
+            // if event received is the skyController 2 battery update
             if ((commandKey == ARCONTROLLER_DICTIONARY_KEY_ENUM.ARCONTROLLER_DICTIONARY_KEY_SKYCONTROLLER_SKYCONTROLLERSTATE_BATTERYCHANGED) && (elementDictionary != null)) {
                 ARControllerArgumentDictionary<Object> args = elementDictionary.get(ARControllerDictionary.ARCONTROLLER_DICTIONARY_SINGLE_KEY);
                 if (args != null) {
@@ -475,7 +475,7 @@ public class SkyController2Drone {
                     mHandler.post(new Runnable() {
                         @Override
                         public void run() {
-                            notifySkyController2BatteryChanged(battery);
+                            notifySkyControllerBatteryChanged(battery);
                         }
                     });
                 }
