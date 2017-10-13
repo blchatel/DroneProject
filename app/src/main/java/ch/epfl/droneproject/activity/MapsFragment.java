@@ -1,13 +1,10 @@
 package ch.epfl.droneproject.activity;
 
 import android.Manifest;
-import android.content.Intent;
 import android.content.pm.PackageManager;
-import android.os.Environment;
 import android.support.v4.app.ActivityCompat;
 import android.support.v4.app.Fragment;
 import android.os.Bundle;
-import android.util.Log;
 import android.view.KeyEvent;
 import android.view.LayoutInflater;
 import android.view.View;
@@ -25,40 +22,15 @@ import com.google.android.gms.maps.model.Marker;
 import com.google.android.gms.maps.model.MarkerOptions;
 import com.google.android.gms.maps.model.PolylineOptions;
 
-import java.io.File;
 import java.util.ArrayList;
-import java.util.List;
 
 import ch.epfl.droneproject.R;
+import ch.epfl.droneproject.module.FlightPlanerModule;
 
-
+/**
+ *
+ */
 public class MapsFragment extends Fragment implements OnMapReadyCallback {
-
-    /**
-     * Interface making available MapsFragment listening
-     */
-    private interface Listener{
-        void onOpenClick();
-    }
-    /**
-     * All the listeners of an MapsFragment instance
-     */
-    List<Listener> mListeners;
-    /**
-     * Add a new listener to the list
-     * @param listener
-     */
-    public void addListener(Listener listener) {
-        mListeners.add(listener);
-    }
-    /**
-     * Remove a listener of the list
-     * @param listener
-     */
-    public void removeListener(Listener listener) {
-        mListeners.remove(listener);
-    }
-
 
     /**
      * The view where the fragment is part of
@@ -69,6 +41,10 @@ public class MapsFragment extends Fragment implements OnMapReadyCallback {
      * Boolean that indicate if the markers detail's panel is displayed or not
      */
     private boolean mIsDetailsDisplay;
+
+    /**
+     * The googleMap object allowing us using google map api for android
+     */
     private GoogleMap mMap;
 
     /**
@@ -77,33 +53,50 @@ public class MapsFragment extends Fragment implements OnMapReadyCallback {
     private static final boolean DRAW_PATH = true;
 
     /**
-     * Constant that indicate if we draw the fixes marker
+     * Constant that indicate if we draw the fixes marker: Its value must be "true"
      */
     private static final boolean DRAW_FIXES = true;
 
+    /**
+     * The flight planner module instance (from SkyControllerDrone->SkyControllerExtensionModule->FlightPlannerModule)
+     * Used to link display with flight data.
+     */
+    private FlightPlanerModule mFPLM;
 
-    private ArrayList<Fix> fixList;
 
+    /**
+     * Initialize the Fragment as a constructor should.
+     * This method MUST be called in chain with a new instantiation
+     * i.e : new MapsFragment().init(fplm);
+     * This method is called before createView()
+     * @param mFPLM (FlightPlanerModule): the flight plan module used for link UI with data
+     */
+    public MapsFragment init(FlightPlanerModule mFPLM) {
+
+        mIsDetailsDisplay = false;
+
+        this.mFPLM = mFPLM;
+        mFPLM.cleanFix();
+
+        return this;
+    }
 
     @Override
     public View onCreateView(LayoutInflater inflater, ViewGroup container, Bundle savedInstanceState) {
 
         mView = inflater.inflate(R.layout.fragment_maps, container, false);
-        mListeners = new ArrayList<>();
-        mIsDetailsDisplay = false;
-        fixList = new ArrayList<>();
 
         // Obtain the SupportMapFragment and get notified when the map is ready to be used.
         SupportMapFragment mapFragment = (SupportMapFragment) getChildFragmentManager().findFragmentById(R.id.map);
         mapFragment.getMapAsync(this);
 
-
         Button cleanBtn = mView.findViewById(R.id.clean_button);
         cleanBtn.setOnClickListener(new View.OnClickListener() {
             public void onClick(View v) {
                 mMap.clear();
-                fixList = new ArrayList<>();
+                mFPLM.cleanFix();
                 hideMarkerDetails();
+                drawDrone();
             }
         });
 
@@ -111,7 +104,7 @@ public class MapsFragment extends Fragment implements OnMapReadyCallback {
         openBtn.setOnClickListener(new View.OnClickListener() {
             public void onClick(View v) {
                 mMap.clear();
-                fixList = new ArrayList<>();
+                mFPLM.cleanFix();
                 hideMarkerDetails();
             }
         });
@@ -126,7 +119,7 @@ public class MapsFragment extends Fragment implements OnMapReadyCallback {
         Button removeBtn = mView.findViewById(R.id.delete_marker_button);
         removeBtn.setOnClickListener(new View.OnClickListener() {
             public void onClick(View v) {
-                fixList.remove(Integer.parseInt(((TextView) mView.findViewById(R.id.id_text)).getText().toString()));
+                mFPLM.removeFix(Integer.parseInt(((TextView) mView.findViewById(R.id.id_text)).getText().toString()));
                 drawFlightPlan();
                 hideMarkerDetails();
             }
@@ -164,8 +157,7 @@ public class MapsFragment extends Fragment implements OnMapReadyCallback {
             @Override
             public void onMapClick(LatLng point) {
                 hideMarkerDetails();
-                //fixList.add(new MarkerOptions().position(point).draggable(true));
-                fixList.add(new Fix(Fix.DEFAULT_TITLE+fixList.size(), point.latitude, point.longitude, Fix.DEFAULT_ALTITUDE, Fix.DEFAULT_YAW));
+                mFPLM.addDefaultFix(point.latitude, point.longitude);
                 drawFlightPlan();
             }
         });
@@ -173,8 +165,8 @@ public class MapsFragment extends Fragment implements OnMapReadyCallback {
         mMap.setOnMarkerClickListener(new GoogleMap.OnMarkerClickListener() {
             @Override
             public boolean onMarkerClick(Marker marker) {
-                showMarkerDetails();
                 updateMarkerDetails((int)marker.getTag());
+                showMarkerDetails();
                 return false;
             }
         });
@@ -196,80 +188,109 @@ public class MapsFragment extends Fragment implements OnMapReadyCallback {
             }
             @Override
             public void onMarkerDragEnd(Marker marker) {
-                //fixList.set((int)marker.getTag(), new MarkerOptions().position(marker.getPosition()).draggable(true));
-                fixList.set((int)marker.getTag(), new Fix(marker.getTitle(), marker.getPosition().latitude, marker.getPosition().longitude, Fix.DEFAULT_ALTITUDE, Fix.DEFAULT_YAW));
+                mFPLM.setFixPosition((int)marker.getTag(), marker.getPosition().latitude, marker.getPosition().longitude);
                 drawFlightPlan();
             }
         });
+
+        drawFlightPlan();
     }
 
+    /**
+     * Draw on the map the flight plan.
+     * it follows the DRAW_FIXES and DRAW_PATH flags
+     * draw the drone icon if drone location available
+     */
     private void drawFlightPlan(){
 
+        // First clear the map, before drawing on it
         mMap.clear();
 
+        // Get the Fixes of the flight plan on the MarkerOption form
+        ArrayList<MarkerOptions> fixesMarkerOptions = mFPLM.getFixesMarkerOptions();
+
+        // Draw the path if asked using a Polyline
         if(DRAW_PATH) {
             PolylineOptions betweenFixLines = new PolylineOptions();
-            for (int i = 0; i < fixList.size(); i++) {
-                betweenFixLines.add(fixList.get(i).getPosition());
+            for (int i = 0; i < fixesMarkerOptions.size(); i++) {
+                betweenFixLines.add(fixesMarkerOptions.get(i).getPosition());
             }
             mMap.addPolyline(betweenFixLines);
         }
 
+        // Draw the fixes if asked using Markers
         if(DRAW_FIXES) {
-            for (int i = 0; i < fixList.size(); i++) {
-                Fix fix = fixList.get(i);
-                Marker m = mMap.addMarker(new MarkerOptions().position(fix.getPosition()).draggable(true).title(fix.getTitle()));
+            for (int i = 0; i < fixesMarkerOptions.size(); i++) {
+                Marker m = mMap.addMarker(fixesMarkerOptions.get(i));
                 m.setTag(i);
             }
         }
+
+        drawDrone();
+
     }
 
+    private void drawDrone(){
+        if(true){
+            Marker m = mMap.addMarker(mFPLM.getmCurrentDronePosition());
+            m.setTag(-1);
+        }
+    }
+
+    /**
+     * Hide the Marker Details Panel with its current data
+     */
     private void hideMarkerDetails(){
         mView.findViewById(R.id.markerPanel).setVisibility(View.GONE);
         mIsDetailsDisplay = false;
     }
+
+    /**
+     * Show the Marker Details Panel with its current data !
+     * Be careful to set new data before showing the panel !
+     */
     private void showMarkerDetails(){
         mView.findViewById(R.id.markerPanel).setVisibility(View.VISIBLE);
         mIsDetailsDisplay = true;
     }
 
+    /**
+     * Update the content of the Maker Detail panel with the idTag selected marker
+     * @param idTag (int): selected marker
+     */
     private void updateMarkerDetails(int idTag){
 
-        Fix fix = fixList.get(idTag);
-
+        // Simply get into the flight planer module to obtain needed values.
         ((TextView) mView.findViewById(R.id.id_text)).setText(String.valueOf(idTag));
-        ((EditText) mView.findViewById(R.id.title_text)).setText(fix.getTitle());
-        ((EditText) mView.findViewById(R.id.lat_text)).setText(String.valueOf(fix.getPosition().latitude));
-        ((EditText) mView.findViewById(R.id.lon_text)).setText(String.valueOf(fix.getPosition().longitude));
-        ((EditText) mView.findViewById(R.id.alt_text)).setText(String.valueOf(fix.getAlt()));
-        ((EditText) mView.findViewById(R.id.yaw_text)).setText(String.valueOf(fix.getYaw()));
+        ((EditText) mView.findViewById(R.id.title_text)).setText(mFPLM.getTitle(idTag));
+        LatLng latLng = mFPLM.getPosition(idTag);
+        ((EditText) mView.findViewById(R.id.lat_text)).setText(String.valueOf(latLng.latitude));
+        ((EditText) mView.findViewById(R.id.lon_text)).setText(String.valueOf(latLng.longitude));
+        ((EditText) mView.findViewById(R.id.alt_text)).setText(String.valueOf(mFPLM.getAlt(idTag)));
+        ((EditText) mView.findViewById(R.id.yaw_text)).setText(String.valueOf(mFPLM.getYaw(idTag)));
     }
 
 
-
-
+    /**
+     * When you press DONE after a modification into the Marker details panel, the whole UI must be
+     * adapted to this modification.
+     * i.e. The parker position, or the marker details fields.
+     */
     private final TextView.OnEditorActionListener onKeyDoneListener = new TextView.OnEditorActionListener() {
 
         @Override
         public boolean onEditorAction(TextView textView, int actionId, KeyEvent keyEvent) {
 
-            Log.e("KEY", "KEY1");
-
             if(textView.getText().length() > 0){
 
                 if (actionId == EditorInfo.IME_ACTION_DONE || actionId == KeyEvent.KEYCODE_BACK) {
-                    Log.e("KEY", "KEY2");
-
-                    Fix fix = new Fix(
+                    mFPLM.setFix(Integer.parseInt(((TextView) mView.findViewById(R.id.id_text)).getText().toString()),
                             ((EditText) mView.findViewById(R.id.title_text)).getText().toString(),
                             Double.parseDouble(((EditText) mView.findViewById(R.id.lat_text)).getText().toString()),
                             Double.parseDouble(((EditText) mView.findViewById(R.id.lon_text)).getText().toString()),
                             Double.parseDouble(((EditText) mView.findViewById(R.id.alt_text)).getText().toString()),
                             Double.parseDouble(((EditText) mView.findViewById(R.id.yaw_text)).getText().toString())
-                    );
-                    Log.e("KEY", ((TextView) mView.findViewById(R.id.id_text)).getText().toString());
-
-                    fixList.set(Integer.parseInt(((TextView) mView.findViewById(R.id.id_text)).getText().toString()), fix);
+                            );
                     drawFlightPlan();
                 }
                 return false;
@@ -278,59 +299,5 @@ public class MapsFragment extends Fragment implements OnMapReadyCallback {
         }
     };
 
-    private class Fix{
 
-        static final String DEFAULT_TITLE = "FIX";
-        static final double DEFAULT_ALTITUDE = 5;
-        static final double DEFAULT_YAW = 0;
-
-        String title;
-        double lat;
-        double lon;
-        double alt;
-        double yaw;
-
-        boolean isTakeOff;
-        boolean isLanding;
-
-
-        Fix(String title, double lat, double lon, double alt, double yaw) {
-            this.title = title;
-
-            this.lat = lat%180;
-            if(this.lat > 90){
-                this.lat = -180+this.lat;
-            }
-            this.lon = lon%360;
-            if(this.lon > 180){
-                this.lon = -360+this.lon;
-            }
-            this.alt = alt;
-            this.yaw = yaw%360;
-
-            isTakeOff = false;
-            isLanding = false;
-        }
-
-        LatLng getPosition(){
-            return new LatLng(lat, lon);
-        }
-
-        String getTitle() {
-            return title;
-        }
-
-        double getAlt() {
-            return alt;
-        }
-
-        double getYaw() {
-            return yaw;
-        }
-
-        public String toString(){
-            return title + ":  lat:"+lat + ", lon:"+lon+", alt:"+alt+", yaw:"+yaw;
-        }
-
-    }
 }

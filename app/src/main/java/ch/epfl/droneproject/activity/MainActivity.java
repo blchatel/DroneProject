@@ -13,17 +13,11 @@ import ch.epfl.droneproject.R;
 public class MainActivity extends AppCompatActivity {
 
     private static final int LAUNCHING_TIME = 1;
-    private static Context mContext;
-    private static String mInternalStoragePath;
-
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_main);
-
-        mContext = getApplicationContext();
-        mInternalStoragePath = mContext.getFilesDir().getAbsolutePath()+ File.separator;
 
         try {
             synchronized(this){
@@ -38,11 +32,5 @@ public class MainActivity extends AppCompatActivity {
         }
     }
 
-    public static Context getAppContext() {
-        return mContext;
-    }
-    public static String getAppInternalStoragePath() {
-        return mInternalStoragePath;
-    }
 
 }

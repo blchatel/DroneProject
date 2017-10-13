@@ -14,7 +14,7 @@ public class SkyControllerExtensionModule {
     private Context mContext;
     private ARDeviceController mDeviceController;
     private ARCONTROLLER_DEVICE_STATE_ENUM mSkyControllerState;
-    private FlightPlanModule mFlightPlanModule;
+    private FlightPlanerModule mFlightPlanerModule;
     private AutoPilotModule mAutoPilot;
 
 
@@ -27,8 +27,13 @@ public class SkyControllerExtensionModule {
         this.mContext = context;
         this.mDeviceController = deviceController;
         this.mSkyControllerState = skyController2State;
-        this.mFlightPlanModule = new FlightPlanModule(context);
+        this.mFlightPlanerModule = new FlightPlanerModule();
     }
+
+    public FlightPlanerModule getFlightPlanModule() {
+        return mFlightPlanerModule;
+    }
+
 
     public void setDroneConfig(ConfigDrone config){
 
@@ -57,7 +62,6 @@ public class SkyControllerExtensionModule {
             mDeviceController.getFeatureARDrone3().sendSpeedSettingsHullProtection(config.getHasHullProtection());
         }
     }
-
 
 
     /**
@@ -130,6 +134,7 @@ public class SkyControllerExtensionModule {
         }
     }
 
+
     /**
      * Land.
      * Please note that, if you put some positive gaz (in the PilotingCommand) during the landing, it will cancel it.
@@ -144,6 +149,7 @@ public class SkyControllerExtensionModule {
             mDeviceController.getFeatureARDrone3().sendPilotingLanding();
         }
     }
+
 
     /**
      * Cut out the motors for emergency.
@@ -160,6 +166,7 @@ public class SkyControllerExtensionModule {
             mDeviceController.getFeatureARDrone3().sendPilotingEmergency();
         }
     }
+
 
     /**
      * Return home.
@@ -181,6 +188,7 @@ public class SkyControllerExtensionModule {
             mDeviceController.getFeatureARDrone3().sendPilotingNavigateHome(start);
         }
     }
+
 
     /**
      * Move the drone to a relative position and rotate heading by a given angle.

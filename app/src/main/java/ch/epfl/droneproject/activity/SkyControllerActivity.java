@@ -46,15 +46,18 @@ public class SkyControllerActivity extends AppCompatActivity {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_sky_controller);
 
-        final ViewPager viewPager = (ViewPager) findViewById(R.id.pager);
-        viewPager.setAdapter(new PagerAdapter(viewPager, getSupportFragmentManager()));
+        Log.e("Main", "C");
 
+
+        // Init the Interface (button, etc...)
         initIHM();
 
+        // Init the Device service and the SkyControllerDrone. Make this activity listen the SkyControllerDrone instance
         Intent intent = getIntent();
         ARDiscoveryDeviceService service = intent.getParcelableExtra(DeviceListActivity.EXTRA_DEVICE_SERVICE);
+        mSkyControllerDrone = new SkyControllerDrone(this);
 //        mSkyControllerDrone = new SkyControllerDrone(this, service);
-  //      mSkyControllerDrone.addListener(mSkyControllerListener);
+//        mSkyControllerDrone.addListener(mSkyControllerListener);
     }
 
     @Override
@@ -62,9 +65,8 @@ public class SkyControllerActivity extends AppCompatActivity {
         super.onStart();
 
         // show a loading view while the bebop drone is connecting
-        if ((mSkyControllerDrone != null) &&
-                !(ARCONTROLLER_DEVICE_STATE_ENUM.ARCONTROLLER_DEVICE_STATE_RUNNING.equals(mSkyControllerDrone.getSkyControllerConnectionState())))
-        {
+        if (false && (mSkyControllerDrone != null) &&
+                !(ARCONTROLLER_DEVICE_STATE_ENUM.ARCONTROLLER_DEVICE_STATE_RUNNING.equals(mSkyControllerDrone.getSkyControllerConnectionState()))){
 
             showProgressBar(getResources().getString(R.string.connection));
             // if the connection to the Bebop fails, finish the activity
@@ -76,6 +78,8 @@ public class SkyControllerActivity extends AppCompatActivity {
 
     @Override
     public void onBackPressed() {
+
+        // Disconnect from the drone and controller
         if (mSkyControllerDrone != null)
         {
             showProgressBar(getResources().getString(R.string.disconnection));
@@ -89,23 +93,33 @@ public class SkyControllerActivity extends AppCompatActivity {
     }
 
     @Override
-    public void onDestroy() {
-        //mSkyControllerDrone.dispose();
+    public void onDestroy(){
+        mSkyControllerDrone.dispose();
         super.onDestroy();
     }
 
 
+    /**
+     * Initialize all the the UI components and set all needed listener
+     */
     private void initIHM() {
 
+        // Init the pager with the two fragment adapter
+        final ViewPager viewPager = (ViewPager) findViewById(R.id.pager);
+        viewPager.setAdapter(new PagerAdapter(viewPager, getSupportFragmentManager()));
+
+        // Init the progress tool
         progressBar = (ProgressBar) findViewById(R.id.progressBar);
         progressText = (TextView) findViewById(R.id.progressText);
 
+        // init the emergency button
         findViewById(R.id.emergencyBt).setOnClickListener(new View.OnClickListener() {
             public void onClick(View v) {
                 mSkyControllerDrone.skeModule().emergency();
             }
         });
 
+        // inti the download button
         mDownloadBt = (Button)findViewById(R.id.downloadBt);
         mDownloadBt.setEnabled(false);
         mDownloadBt.setOnClickListener(new View.OnClickListener() {
@@ -115,25 +129,43 @@ public class SkyControllerActivity extends AppCompatActivity {
         });
     }
 
+    /**
+     * Show the progress bar with the text label
+     * @param text (String): progression label
+     */
     private void showProgressBar(String text){
-        progressBar.setVisibility(View.VISIBLE);// To Show ProgressBar
+        progressBar.setVisibility(View.VISIBLE);
         progressText.setText(text);
         progressText.setVisibility(View.VISIBLE);
     }
+
+    /**
+     * Hide the progression bar and its text label
+     */
     private void hideProgressBar(){
-        progressBar.setVisibility(View.GONE);// To Show ProgressBar
+        progressBar.setVisibility(View.GONE);
         progressText.setVisibility(View.GONE);
     }
 
 
-
+    /**
+     * Page adapter for the two fragment.
+     * - Video fragment
+     * - Map fragment
+     * It is implemented in a way we only swipe right to change the "tab"
+     */
     private class PagerAdapter extends FragmentStatePagerAdapter {
 
+        /**
+         * There is two tab, the video fragment and the map fragment
+         */
         private static final int NUM_OF_TAB = 2;
 
         private PagerAdapter(final ViewPager pager, FragmentManager fm) {
             super(fm);
 
+            // Listener to set selected tab to 0 when we swipe right on the last tab
+            // to simulate a loop swiper
             pager.addOnPageChangeListener(new ViewPager.OnPageChangeListener() {
 
                 @Override
@@ -143,11 +175,9 @@ public class SkyControllerActivity extends AppCompatActivity {
                     }
                 }
                 @Override
-                public void onPageScrolled(int position, float positionOffset, int positionOffsetPixels) {
-                }
+                public void onPageScrolled(int position, float positionOffset, int positionOffsetPixels) {}
                 @Override
-                public void onPageScrollStateChanged(int state) {
-                }
+                public void onPageScrollStateChanged(int state) {}
             });
         }
 
@@ -159,7 +189,7 @@ public class SkyControllerActivity extends AppCompatActivity {
                     mVideoFragment = new VideoFragment();
                     return mVideoFragment;
                 case 1:
-                    mMapFragment = new MapsFragment();
+                    mMapFragment = new MapsFragment().init(mSkyControllerDrone.skeModule().getFlightPlanModule());
                     return mMapFragment;
                 case 2:
                     return new Fragment();
@@ -169,10 +199,14 @@ public class SkyControllerActivity extends AppCompatActivity {
         }
         @Override
         public int getCount() {
+            // Return +1 because we need an empty buffer tab at the end to switch back to first one
             return NUM_OF_TAB+1;
         }
     }
 
+    /**
+     * Listener which listen SkyControllerDrone instance for this SkyController Activity
+     */
     private final SkyControllerDrone.Listener mSkyControllerListener = new SkyControllerDrone.Listener() {
         @Override
         public void onSkyControllerConnectionChanged(ARCONTROLLER_DEVICE_STATE_ENUM state) {

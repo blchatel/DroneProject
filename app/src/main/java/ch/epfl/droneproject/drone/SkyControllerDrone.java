@@ -137,6 +137,17 @@ public class SkyControllerDrone {
     private ARUtilsManager mFtpListManager;
     private ARUtilsManager mFtpQueueManager;
 
+    /**
+     * FOR DEBUG
+     * @param context
+     */
+    public SkyControllerDrone(Context context){
+        mContext = context;
+        mListeners = new ArrayList<>();
+        mHandler = new Handler(context.getMainLooper());
+        mSKEModule = new SkyControllerExtensionModule(context, mDeviceController,  mSkyControllerState);
+    }
+
     public SkyControllerDrone(Context context, @NonNull ARDiscoveryDeviceService deviceService) {
 
         mContext = context;
@@ -267,6 +278,8 @@ public class SkyControllerDrone {
     public SkyControllerExtensionModule skeModule(){
         return this.mSKEModule;
     }
+
+
 
     /**
      * Download the last flight medias
