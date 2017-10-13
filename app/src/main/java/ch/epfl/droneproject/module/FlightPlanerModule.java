@@ -1,5 +1,8 @@
 package ch.epfl.droneproject.module;
 
+import android.graphics.Bitmap;
+import android.graphics.BitmapFactory;
+import android.graphics.Matrix;
 import android.util.Log;
 
 import com.google.android.gms.maps.model.BitmapDescriptorFactory;
@@ -20,16 +23,22 @@ import ch.epfl.droneproject.R;
  */
 public class FlightPlanerModule {
 
+    private int mLastPassedFix;
+    /**
+     * The drone position which is by definition the -1 element of fixList
+     */
     private Fix mCurrentDronePosition;
-
-    public FlightPlanerModule() {
-        this.mCurrentDronePosition = new Fix("Bebop", 0,  0, 5, 0);
-    }
-
     /**
      * A flight plan has a list of fixes
      */
     private ArrayList<Fix> fixList;
+
+
+    public FlightPlanerModule() {
+        this.mCurrentDronePosition = new Fix("Bebop", 0,  0, 5, 0);
+        this.mLastPassedFix = 0;
+    }
+
 
     /**
      * Clean all the fixes by initiating a new empty list
@@ -62,8 +71,12 @@ public class FlightPlanerModule {
      * @param lon (double): new longitude [degree]
      */
     public void setFixPosition(int index, double lat, double lon){
-        Fix fix = fixList.get(index);
-        fixList.set(index, new Fix(fix.title, lat, lon, fix.alt, fix.yaw));
+        if(index == -1){
+            mCurrentDronePosition = new Fix(mCurrentDronePosition.title, lat, lon, mCurrentDronePosition.alt, mCurrentDronePosition.yaw);
+        }else {
+            Fix fix = fixList.get(index);
+            fixList.set(index, new Fix(fix.title, lat, lon, fix.alt, fix.yaw));
+        }
     }
 
     /**
@@ -76,7 +89,12 @@ public class FlightPlanerModule {
      * @param yaw (double): new yaw angle [degree]
      */
     public void setFix(int index, String title, double lat, double lon, double alt, double yaw){
-        fixList.set(index, new Fix(title, lat, lon, alt, yaw));
+
+        if(index == -1){
+            mCurrentDronePosition = new Fix(title, lat, lon, alt, yaw);
+        }else {
+            fixList.set(index, new Fix(title, lat, lon, alt, yaw));
+        }
     }
 
 
@@ -130,11 +148,17 @@ public class FlightPlanerModule {
 
     public MarkerOptions getmCurrentDronePosition(){
 
+        Matrix matrix = new Matrix();
+        matrix.postRotate((float)mCurrentDronePosition.yaw);
+        Bitmap icon = BitmapFactory.decodeResource(DroneApplication.getContext().getResources(), R.drawable.drone30);
+        Bitmap rotatedIcon =  Bitmap.createBitmap(icon, 0, 0, icon.getWidth(), icon.getHeight(), matrix, true);
+
+
         return new MarkerOptions()
                 .position(mCurrentDronePosition.getPosition())
                 .draggable(false)
                 .title(mCurrentDronePosition.getTitle())
-                .icon(BitmapDescriptorFactory.fromResource(R.drawable.drone30));
+                .icon(BitmapDescriptorFactory.fromBitmap(rotatedIcon));
     }
 
     /**
