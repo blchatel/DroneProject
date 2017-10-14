@@ -243,7 +243,7 @@ public class SkyControllerExtensionModule {
                 (mDeviceController.getExtensionState().equals(ARCONTROLLER_DEVICE_STATE_ENUM.ARCONTROLLER_DEVICE_STATE_RUNNING))) {
 
             String filepath = mFlightPlanerModule.getMavlink().generateMavlinkFile();
-            mFlightPlanerModule.getMavlink().transmitMavlinkFile(mContext, mDeviceController.getFeatureCommon(), ARDISCOVERY_PRODUCT_ENUM.ARDISCOVERY_PRODUCT_BEBOP_2, "data/ftp/bebop_drone");
+            mFlightPlanerModule.getMavlink().transmitMavlinkFile(mContext, mDeviceController.getFeatureCommon(), ARDISCOVERY_PRODUCT_ENUM.ARDISCOVERY_PRODUCT_BEBOP_2);
         }
     }
 

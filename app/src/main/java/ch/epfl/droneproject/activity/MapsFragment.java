@@ -147,6 +147,7 @@ public class MapsFragment extends Fragment implements OnMapReadyCallback {
                     showToast(getResources().getString(R.string.errorSaving));
                 }else{
                     showToast(getResources().getString(R.string.confirmSaving)+filename);
+                    ((TextView)mView.findViewById(R.id.flightplan_text)).setText(filename);
                 }
             }
         });

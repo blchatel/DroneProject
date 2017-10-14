@@ -97,7 +97,6 @@ public class DeviceListActivity extends AppCompatActivity{
 
             @Override
             public void onRefresh() {
-                 Log.e("REFRESH", "REFRESH");
                 // Do something if needed
                  swipeLayout.setRefreshing(false);
             }

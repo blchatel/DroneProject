@@ -179,7 +179,6 @@ public class DroneDiscoverer
     }
 
     private void notifyServiceDiscovered(List<ARDiscoveryDeviceService> dronesList) {
-        Log.e("REFRESH", "NOTIFY");
         List<Listener> listenersCpy = new ArrayList<>(mListeners);
         for (Listener listener : listenersCpy) {
             listener.onDronesListUpdated(dronesList);

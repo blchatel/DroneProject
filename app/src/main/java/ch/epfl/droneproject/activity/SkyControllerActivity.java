@@ -47,18 +47,15 @@ public class SkyControllerActivity extends AppCompatActivity {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_sky_controller);
 
-        Log.e("Main", "C");
-
-
         // Init the Interface (button, etc...)
         initIHM();
 
         // Init the Device service and the SkyControllerDrone. Make this activity listen the SkyControllerDrone instance
         Intent intent = getIntent();
         ARDiscoveryDeviceService service = intent.getParcelableExtra(DeviceListActivity.EXTRA_DEVICE_SERVICE);
-        mSkyControllerDrone = new SkyControllerDrone(this);
-//        mSkyControllerDrone = new SkyControllerDrone(this, service);
-//        mSkyControllerDrone.addListener(mSkyControllerListener);
+        //mSkyControllerDrone = new SkyControllerDrone(this);
+        mSkyControllerDrone = new SkyControllerDrone(this, service);
+        mSkyControllerDrone.addListener(mSkyControllerListener);
     }
 
     @Override
@@ -66,7 +63,8 @@ public class SkyControllerActivity extends AppCompatActivity {
         super.onStart();
 
         // show a loading view while the bebop drone is connecting
-        if (false && (mSkyControllerDrone != null) &&
+        //if (false && (mSkyControllerDrone != null) &&
+        if ((mSkyControllerDrone != null) &&
                 !(ARCONTROLLER_DEVICE_STATE_ENUM.ARCONTROLLER_DEVICE_STATE_RUNNING.equals(mSkyControllerDrone.getSkyControllerConnectionState()))){
 
             showProgressBar(getResources().getString(R.string.connection));

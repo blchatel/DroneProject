@@ -305,6 +305,7 @@ public class FlightPlanerModule {
          * The Folder name into internal app storage where to save the mavlink flight plans.
          */
         public final static String MAVLINK_FOLDER_NAME = "/Mavlink/";
+        public final static String MAVLINK_REMOTE_FOLDER_NAME = "/internal_000/flightplans/";
 
         private FlightPlanerModule mFpm;
 
@@ -370,12 +371,13 @@ public class FlightPlanerModule {
                 // Then compute the filename and save the file.
                 final Calendar calendar = Calendar.getInstance();
                 final String time = ""+calendar.getTime().getTime();
-                final String filename = externalDirectory + "/flightPlan"+time+".mavlink";
-                final File mavFile = new File(filename);
+                final String filePath = externalDirectory + "/flightPlan"+time+".mavlink";
+                final String filename = "flightPlan"+time+".mavlink";
+                final File mavFile = new File(filePath);
                 mavFile.delete();
 
                 // Create the file in the mavlink format
-                generator.CreateMavlinkFile(filename);
+                generator.CreateMavlinkFile(filePath);
                 mCurrentFlightPlan = filename;
                 return filename;
 
@@ -498,7 +500,6 @@ public class FlightPlanerModule {
             for (File f : mavlinkDir.listFiles()) {
                 if (f.isFile()) {
                     filenames.add(f.getName());
-                    Log.e("PLAN", f.getName());
                 }
             }
 
@@ -515,7 +516,7 @@ public class FlightPlanerModule {
 
 
 
-        public void transmitMavlinkFile(final Context ctx, final ARFeatureCommon featureCommon, final ARDISCOVERY_PRODUCT_ENUM product, final String address) {
+        public void transmitMavlinkFile(final Context ctx, final ARFeatureCommon featureCommon, final ARDISCOVERY_PRODUCT_ENUM product) {
             try {
 
                 dataTransferManager = new ARDataTransferManager();
@@ -523,13 +524,13 @@ public class FlightPlanerModule {
                 uploadManager = new ARUtilsManager();
 
                 if (product == ARDISCOVERY_PRODUCT_ENUM.ARDISCOVERY_PRODUCT_SKYCONTROLLER_2) {
-                    uploadManager.initWifiFtp(UsbAccessoryMux.get(ctx).getMux().newMuxRef(), address, 61, "", "");
+                    uploadManager.initWifiFtp(UsbAccessoryMux.get(ctx).getMux().newMuxRef(), MAVLINK_REMOTE_FOLDER_NAME, 61, "", "");
                 } else {
-                    uploadManager.initWifiFtp(address, 61, "", "");
+                    uploadManager.initWifiFtp(MAVLINK_REMOTE_FOLDER_NAME, 61, "", "");
                 }
 
                 final UploadListener listener = new UploadListener(featureCommon);
-                uploader.createUploader(uploadManager, "flightPlan.mavlink", mCurrentFlightPlan, listener, null, listener, null, ARDATATRANSFER_UPLOADER_RESUME_ENUM.ARDATATRANSFER_UPLOADER_RESUME_FALSE);
+                uploader.createUploader(uploadManager, mCurrentFlightPlan, mCurrentFlightPlan, listener, null, listener, null, ARDATATRANSFER_UPLOADER_RESUME_ENUM.ARDATATRANSFER_UPLOADER_RESUME_FALSE);
 
                 uploadHandlerThread = new HandlerThread("mavlink_uploader");
                 uploadHandlerThread.start();
@@ -577,7 +578,7 @@ public class FlightPlanerModule {
                                 uploadHandlerThread = null;
 
                                 if (featureCommon != null && error == ARDATATRANSFER_ERROR_ENUM.ARDATATRANSFER_OK) {
-                                    featureCommon.sendMavlinkStart(mCurrentFlightPlan, ARCOMMANDS_COMMON_MAVLINK_START_TYPE_ENUM.ARCOMMANDS_COMMON_MAVLINK_START_TYPE_FLIGHTPLAN);
+                                    //featureCommon.sendMavlinkStart(mCurrentFlightPlan, ARCOMMANDS_COMMON_MAVLINK_START_TYPE_ENUM.ARCOMMANDS_COMMON_MAVLINK_START_TYPE_FLIGHTPLAN);
                                 }
                             }
                         }
