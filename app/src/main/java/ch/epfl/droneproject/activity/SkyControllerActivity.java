@@ -13,6 +13,7 @@ import android.widget.Button;
 import android.widget.ProgressBar;
 import android.widget.TextView;
 
+import com.parrot.arsdk.arcommands.ARCOMMANDS_ARDRONE3_ANIMATIONS_FLIP_DIRECTION_ENUM;
 import com.parrot.arsdk.arcommands.ARCOMMANDS_ARDRONE3_MEDIARECORDEVENT_PICTUREEVENTCHANGED_ERROR_ENUM;
 import com.parrot.arsdk.arcommands.ARCOMMANDS_ARDRONE3_PILOTINGSTATE_FLYINGSTATECHANGED_STATE_ENUM;
 import com.parrot.arsdk.arcontroller.ARCONTROLLER_DEVICE_STATE_ENUM;
@@ -127,6 +128,39 @@ public class SkyControllerActivity extends AppCompatActivity {
                 showProgressBar(getResources().getString(R.string.fetch));
             }
         });
+
+        (findViewById(R.id.leftFlipBt)).setOnClickListener(new View.OnClickListener() {
+            public void onClick(View v) {
+                mSkyControllerDrone.skeModule().makeAFlip(ARCOMMANDS_ARDRONE3_ANIMATIONS_FLIP_DIRECTION_ENUM.ARCOMMANDS_ARDRONE3_ANIMATIONS_FLIP_DIRECTION_LEFT);
+            }
+        });
+        (findViewById(R.id.deltaFrontBt)).setOnClickListener(new View.OnClickListener() {
+            public void onClick(View v) {
+                mSkyControllerDrone.skeModule().moveBy(1, 0, 0, 0);
+            }
+        });
+        (findViewById(R.id.deltaBackBt)).setOnClickListener(new View.OnClickListener() {
+            public void onClick(View v) {
+                mSkyControllerDrone.skeModule().moveBy(-1, 0, 0, 0);
+            }
+        });
+        (findViewById(R.id.startFLPBt)).setOnClickListener(new View.OnClickListener() {
+            public void onClick(View v) {
+                mSkyControllerDrone.skeModule().moveBy(-1, 0, 0, 0);
+            }
+        });
+        (findViewById(R.id.pauseFLPBt)).setOnClickListener(new View.OnClickListener() {
+            public void onClick(View v) {
+                mSkyControllerDrone.skeModule().moveBy(-1, 0, 0, 0);
+            }
+        });
+        (findViewById(R.id.flatTrimBt)).setOnClickListener(new View.OnClickListener() {
+            public void onClick(View v) {
+                mSkyControllerDrone.skeModule().flatTrim();
+            }
+        });
+
+
     }
 
     /**

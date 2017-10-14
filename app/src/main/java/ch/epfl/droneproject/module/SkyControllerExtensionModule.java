@@ -1,10 +1,12 @@
 package ch.epfl.droneproject.module;
 
 import android.content.Context;
-
 import com.parrot.arsdk.arcommands.ARCOMMANDS_ARDRONE3_ANIMATIONS_FLIP_DIRECTION_ENUM;
+import com.parrot.arsdk.arcommands.ARCOMMANDS_COMMON_MAVLINK_START_TYPE_ENUM;
 import com.parrot.arsdk.arcontroller.ARCONTROLLER_DEVICE_STATE_ENUM;
 import com.parrot.arsdk.arcontroller.ARDeviceController;
+import com.parrot.arsdk.arcontroller.ARFeatureCommon;
+import com.parrot.arsdk.ardiscovery.ARDISCOVERY_PRODUCT_ENUM;
 
 import ch.epfl.droneproject.drone.ConfigDrone;
 
@@ -232,4 +234,33 @@ public class SkyControllerExtensionModule {
         }
 
     }
+
+
+
+    public void startFlightPlan(){
+        if ((mDeviceController != null) &&
+                (mSkyControllerState.equals(ARCONTROLLER_DEVICE_STATE_ENUM.ARCONTROLLER_DEVICE_STATE_RUNNING)) &&
+                (mDeviceController.getExtensionState().equals(ARCONTROLLER_DEVICE_STATE_ENUM.ARCONTROLLER_DEVICE_STATE_RUNNING))) {
+
+            String filepath = mFlightPlanerModule.getMavlink().generateMavlinkFile();
+            mFlightPlanerModule.getMavlink().transmitMavlinkFile(mContext, mDeviceController.getFeatureCommon(), ARDISCOVERY_PRODUCT_ENUM.ARDISCOVERY_PRODUCT_BEBOP_2, "data/ftp/bebop_drone");
+        }
+    }
+
+    public void pauseFlightPlan(){
+        if ((mDeviceController != null) &&
+                (mSkyControllerState.equals(ARCONTROLLER_DEVICE_STATE_ENUM.ARCONTROLLER_DEVICE_STATE_RUNNING)) &&
+                (mDeviceController.getExtensionState().equals(ARCONTROLLER_DEVICE_STATE_ENUM.ARCONTROLLER_DEVICE_STATE_RUNNING))) {
+            mDeviceController.getFeatureCommon().sendMavlinkPause();
+        }
+    }
+
+    public void stopFlightPlan(){
+        if ((mDeviceController != null) &&
+                (mSkyControllerState.equals(ARCONTROLLER_DEVICE_STATE_ENUM.ARCONTROLLER_DEVICE_STATE_RUNNING)) &&
+                (mDeviceController.getExtensionState().equals(ARCONTROLLER_DEVICE_STATE_ENUM.ARCONTROLLER_DEVICE_STATE_RUNNING))) {
+            mDeviceController.getFeatureCommon().sendMavlinkStop();
+        }
+    }
+
 }

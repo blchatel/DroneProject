@@ -21,7 +21,6 @@ import android.widget.ListView;
 import android.widget.TextView;
 import android.widget.Toast;
 
-import com.parrot.arsdk.ARSDK;
 import com.parrot.arsdk.ardiscovery.ARDISCOVERY_PRODUCT_ENUM;
 import com.parrot.arsdk.ardiscovery.ARDiscoveryDeviceService;
 import com.parrot.arsdk.ardiscovery.ARDiscoveryService;
@@ -57,9 +56,10 @@ public class DeviceListActivity extends AppCompatActivity{
 
     // this block loads the native libraries
     // it is mandatory
-    static {
-        ARSDK.loadSDKLibs();
-    }
+    // See in Drone Application for the call
+    //static {
+    //    ARSDK.loadSDKLibs();
+    //}
 
     @Override
     protected void onCreate(Bundle savedInstanceState)

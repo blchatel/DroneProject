@@ -30,4 +30,14 @@
     <string name="yaw">Yaw [degree]</string>
     <string name="title">Title</string>
     <string name="close">Close</string>
+    <string name="errorSaving">Error while saving</string>
+    <string name="confirmSaving">Flightplan saved as: </string>
+    <string name="leftFlip">LeftFlip</string>
+    <string name="moveF">Move1F</string>
+    <string name="moveB">Move1B</string>
+    <string name="startFLP">StartFLP</string>
+    <string name="pauseFLP">PauseFLP</string>
+    <string name="stopFLP">StopFLP</string>
+    <string name="flatTrim">FlatTrim</string>
+
 </resources>

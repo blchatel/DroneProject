@@ -10,10 +10,15 @@ import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
 import android.view.inputmethod.EditorInfo;
+import android.widget.AdapterView;
+import android.widget.ArrayAdapter;
 import android.widget.Button;
 import android.widget.EditText;
+import android.widget.ListView;
 import android.widget.TextView;
+import android.widget.Toast;
 
+import com.google.android.gms.maps.CameraUpdateFactory;
 import com.google.android.gms.maps.GoogleMap;
 import com.google.android.gms.maps.OnMapReadyCallback;
 import com.google.android.gms.maps.SupportMapFragment;
@@ -58,6 +63,12 @@ public class MapsFragment extends Fragment implements OnMapReadyCallback {
     private static final boolean DRAW_FIXES = true;
 
     /**
+     * Constant that indicate if we draw the Drone marker: Its value must be "true"
+     */
+    private static final boolean DRAW_DRONE = true;
+
+
+    /**
      * The flight planner module instance (from SkyControllerDrone->SkyControllerExtensionModule->FlightPlannerModule)
      * Used to link display with flight data.
      */
@@ -90,6 +101,23 @@ public class MapsFragment extends Fragment implements OnMapReadyCallback {
         SupportMapFragment mapFragment = (SupportMapFragment) getChildFragmentManager().findFragmentById(R.id.map);
         mapFragment.getMapAsync(this);
 
+        final ListView listview = mView.findViewById(R.id.flightplanList);
+        listview.setOnItemClickListener(new AdapterView.OnItemClickListener() {
+            @Override
+            public void onItemClick(AdapterView<?> parent, final View view, int position, long id) {
+                mMap.clear();
+                mFPLM.cleanFix();
+                final String item = (String) parent.getItemAtPosition(position);
+                mFPLM.getMavlink().openMavlinkFile(item);
+                hideMavlinkSelection();
+                drawFlightPlan();
+                ((TextView)mView.findViewById(R.id.flightplan_text)).setText(item);
+                if(mFPLM.getFlightPlanSize() > 0) {
+                    mMap.moveCamera(CameraUpdateFactory.newLatLngZoom(mFPLM.getPosition(0), 16));
+                }
+            }
+        });
+
         Button cleanBtn = mView.findViewById(R.id.clean_button);
         cleanBtn.setOnClickListener(new View.OnClickListener() {
             public void onClick(View v) {
@@ -103,9 +131,23 @@ public class MapsFragment extends Fragment implements OnMapReadyCallback {
         Button openBtn = mView.findViewById(R.id.open_button);
         openBtn.setOnClickListener(new View.OnClickListener() {
             public void onClick(View v) {
-                mMap.clear();
-                mFPLM.cleanFix();
                 hideMarkerDetails();
+                final ArrayAdapter<String> adapter = new ArrayAdapter<>(mView.getContext(), R.layout.flightplan_item, mFPLM.getMavlink().getMavlinkFiles());
+                listview.setAdapter(adapter);
+                showMavlinkSelection();
+            }
+        });
+
+        Button saveBtn = mView.findViewById(R.id.save_button);
+        saveBtn.setOnClickListener(new View.OnClickListener() {
+            public void onClick(View v) {
+                hideMarkerDetails();
+                String filename = mFPLM.getMavlink().generateMavlinkFile();
+                if(filename == null){
+                    showToast(getResources().getString(R.string.errorSaving));
+                }else{
+                    showToast(getResources().getString(R.string.confirmSaving)+filename);
+                }
             }
         });
 
@@ -193,7 +235,8 @@ public class MapsFragment extends Fragment implements OnMapReadyCallback {
             }
         });
 
-        drawFlightPlan();
+        //drawFlightPlan();
+        drawDrone();
     }
 
     /**
@@ -231,8 +274,8 @@ public class MapsFragment extends Fragment implements OnMapReadyCallback {
     }
 
     private void drawDrone(){
-        if(true){
-            Marker m = mMap.addMarker(mFPLM.getmCurrentDronePosition());
+        if(DRAW_DRONE){
+            Marker m = mMap.addMarker(mFPLM.getCurrentDronePosition());
             m.setTag(-1);
         }
     }
@@ -253,6 +296,25 @@ public class MapsFragment extends Fragment implements OnMapReadyCallback {
         mView.findViewById(R.id.markerPanel).setVisibility(View.VISIBLE);
         mIsDetailsDisplay = true;
     }
+
+    /**
+     * Hide the Mavlink file selector Panel with its current data
+     */
+    private void hideMavlinkSelection(){
+        mView.findViewById(R.id.listPanel).setVisibility(View.GONE);
+    }
+
+    /**
+     * Show the Mavlink file selector Panel with its current data
+     */
+    private void showMavlinkSelection(){
+        mView.findViewById(R.id.listPanel).setVisibility(View.VISIBLE);
+    }
+
+    private void showToast(String text){
+        Toast.makeText(mView.getContext(), text, Toast.LENGTH_LONG).show();
+    }
+
 
     /**
      * Update the content of the Maker Detail panel with the idTag selected marker
@@ -298,6 +360,5 @@ public class MapsFragment extends Fragment implements OnMapReadyCallback {
             return true;
         }
     };
-
 
 }
