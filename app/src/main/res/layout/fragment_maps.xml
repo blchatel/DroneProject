@@ -42,7 +42,7 @@ tools:context="ch.epfl.droneproject.activity.MapsFragment" >
         android:background="#80000000"
         android:orientation="vertical"
         android:padding="4dp"
-        android:visibility="visible">
+        android:visibility="gone">
 
         <TextView
             android:id="@+id/id_text"
