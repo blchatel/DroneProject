@@ -22,7 +22,7 @@ public class VideoFragment extends Fragment {
     private TextView mDroneBatteryLabel;
     private TextView mSkyController2BatteryLabel;
     private TextView mDroneConnectionLabel;
-    private ConsoleView mConsole;
+    private static ConsoleView mConsole;
 
     @Override
     public View onCreateView(LayoutInflater inflater, ViewGroup container, Bundle savedInstanceState) {
@@ -39,8 +39,10 @@ public class VideoFragment extends Fragment {
 
         mConsole = mView.findViewById(R.id.console);
 
+
+
         for (int i = 0; i< 100; i++){
-            mConsole.push("Message number "+i);
+            pushInConsole("Message number "+i);
         }
 
         return mView;
@@ -53,6 +55,12 @@ public class VideoFragment extends Fragment {
             mDroneConnectionLabel.setVisibility(View.GONE);
         }
     }
+
+    public static void pushInConsole(String text){
+        if(mConsole != null)
+            mConsole.push(text);
+    }
+
 
     public void setControllerBatteryLabel(String label){
         mSkyController2BatteryLabel.setText(label);

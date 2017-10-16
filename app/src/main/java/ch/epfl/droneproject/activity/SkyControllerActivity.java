@@ -127,37 +127,66 @@ public class SkyControllerActivity extends AppCompatActivity {
             }
         });
 
+
         (findViewById(R.id.leftFlipBt)).setOnClickListener(new View.OnClickListener() {
             public void onClick(View v) {
-                mSkyControllerDrone.skeModule().makeAFlip(ARCOMMANDS_ARDRONE3_ANIMATIONS_FLIP_DIRECTION_ENUM.ARCOMMANDS_ARDRONE3_ANIMATIONS_FLIP_DIRECTION_LEFT);
+                switch (mSkyControllerDrone.getFlyingState()) {
+                    case ARCOMMANDS_ARDRONE3_PILOTINGSTATE_FLYINGSTATECHANGED_STATE_FLYING:
+                    case ARCOMMANDS_ARDRONE3_PILOTINGSTATE_FLYINGSTATECHANGED_STATE_HOVERING:
+                        mSkyControllerDrone.skeModule().makeAFlip(ARCOMMANDS_ARDRONE3_ANIMATIONS_FLIP_DIRECTION_ENUM.ARCOMMANDS_ARDRONE3_ANIMATIONS_FLIP_DIRECTION_LEFT);
+                        break;
+                    default:
+                }
             }
         });
         (findViewById(R.id.deltaFrontBt)).setOnClickListener(new View.OnClickListener() {
             public void onClick(View v) {
-                mSkyControllerDrone.skeModule().moveBy(1, 0, 0, 0);
+                switch (mSkyControllerDrone.getFlyingState()) {
+                    case ARCOMMANDS_ARDRONE3_PILOTINGSTATE_FLYINGSTATECHANGED_STATE_FLYING:
+                    case ARCOMMANDS_ARDRONE3_PILOTINGSTATE_FLYINGSTATECHANGED_STATE_HOVERING:
+                        mSkyControllerDrone.skeModule().moveBy(1, 0, 0, 0);
+                        break;
+                    default:
+                }
             }
         });
         (findViewById(R.id.deltaBackBt)).setOnClickListener(new View.OnClickListener() {
             public void onClick(View v) {
-                mSkyControllerDrone.skeModule().moveBy(-1, 0, 0, 0);
+                switch (mSkyControllerDrone.getFlyingState()) {
+                    case ARCOMMANDS_ARDRONE3_PILOTINGSTATE_FLYINGSTATECHANGED_STATE_FLYING:
+                    case ARCOMMANDS_ARDRONE3_PILOTINGSTATE_FLYINGSTATECHANGED_STATE_HOVERING:
+                        mSkyControllerDrone.skeModule().moveBy(-1, 0, 0, 0);
+                        break;
+                    default:
+                }
             }
         });
         (findViewById(R.id.startFLPBt)).setOnClickListener(new View.OnClickListener() {
             public void onClick(View v) {
-                mSkyControllerDrone.skeModule().moveBy(-1, 0, 0, 0);
+                mSkyControllerDrone.skeModule().startFlightPlan();
             }
         });
         (findViewById(R.id.pauseFLPBt)).setOnClickListener(new View.OnClickListener() {
             public void onClick(View v) {
-                mSkyControllerDrone.skeModule().moveBy(-1, 0, 0, 0);
+                mSkyControllerDrone.skeModule().pauseFlightPlan();
+            }
+        });
+        (findViewById(R.id.stopFLPBt)).setOnClickListener(new View.OnClickListener() {
+            public void onClick(View v) {
+                mSkyControllerDrone.skeModule().stopFlightPlan();
             }
         });
         (findViewById(R.id.flatTrimBt)).setOnClickListener(new View.OnClickListener() {
             public void onClick(View v) {
-                mSkyControllerDrone.skeModule().flatTrim();
+                switch (mSkyControllerDrone.getFlyingState()) {
+                    case ARCOMMANDS_ARDRONE3_PILOTINGSTATE_FLYINGSTATECHANGED_STATE_FLYING:
+                    case ARCOMMANDS_ARDRONE3_PILOTINGSTATE_FLYINGSTATECHANGED_STATE_HOVERING:
+                        mSkyControllerDrone.skeModule().flatTrim();
+                        break;
+                    default:
+                }
             }
         });
-
 
     }
 
@@ -242,6 +271,8 @@ public class SkyControllerActivity extends AppCompatActivity {
     private final SkyControllerDrone.Listener mSkyControllerListener = new SkyControllerDrone.Listener() {
         @Override
         public void onSkyControllerConnectionChanged(ARCONTROLLER_DEVICE_STATE_ENUM state) {
+            VideoFragment.pushInConsole("SkyCon State:"+state);
+
             switch (state)
             {
                 case ARCONTROLLER_DEVICE_STATE_RUNNING:
@@ -265,6 +296,8 @@ public class SkyControllerActivity extends AppCompatActivity {
 
         @Override
         public void onDroneConnectionChanged(ARCONTROLLER_DEVICE_STATE_ENUM state) {
+
+            VideoFragment.pushInConsole("DroneCon State:"+state);
             switch (state)
             {
                 case ARCONTROLLER_DEVICE_STATE_RUNNING:
@@ -288,6 +321,9 @@ public class SkyControllerActivity extends AppCompatActivity {
 
         @Override
         public void onPilotingStateChanged(ARCOMMANDS_ARDRONE3_PILOTINGSTATE_FLYINGSTATECHANGED_STATE_ENUM state) {
+
+            VideoFragment.pushInConsole("Pilot State:"+state);
+
             switch (state) {
                 case ARCOMMANDS_ARDRONE3_PILOTINGSTATE_FLYINGSTATECHANGED_STATE_LANDED:
                     mDownloadBt.setEnabled(true);

@@ -1,6 +1,5 @@
 package ch.epfl.droneproject.module;
 
-import android.content.Context;
 import android.graphics.Bitmap;
 import android.graphics.BitmapFactory;
 import android.graphics.Matrix;
@@ -12,7 +11,6 @@ import android.util.Log;
 import com.google.android.gms.maps.model.BitmapDescriptorFactory;
 import com.google.android.gms.maps.model.LatLng;
 import com.google.android.gms.maps.model.MarkerOptions;
-import com.parrot.arsdk.arcommands.ARCOMMANDS_COMMON_MAVLINK_START_TYPE_ENUM;
 import com.parrot.arsdk.arcontroller.ARFeatureCommon;
 import com.parrot.arsdk.ardatatransfer.ARDATATRANSFER_ERROR_ENUM;
 import com.parrot.arsdk.ardatatransfer.ARDATATRANSFER_UPLOADER_RESUME_ENUM;
@@ -20,8 +18,6 @@ import com.parrot.arsdk.ardatatransfer.ARDataTransferManager;
 import com.parrot.arsdk.ardatatransfer.ARDataTransferUploader;
 import com.parrot.arsdk.ardatatransfer.ARDataTransferUploaderCompletionListener;
 import com.parrot.arsdk.ardatatransfer.ARDataTransferUploaderProgressListener;
-import com.parrot.arsdk.ardiscovery.ARDISCOVERY_PRODUCT_ENUM;
-import com.parrot.arsdk.ardiscovery.UsbAccessoryMux;
 import com.parrot.arsdk.armavlink.ARMavlinkException;
 import com.parrot.arsdk.armavlink.ARMavlinkFileGenerator;
 import com.parrot.arsdk.armavlink.ARMavlinkMissionItem;
@@ -30,7 +26,6 @@ import com.parrot.arsdk.arutils.ARUtilsManager;
 import java.io.BufferedReader;
 import java.io.File;
 import java.io.FileInputStream;
-import java.io.FileNotFoundException;
 import java.io.IOException;
 import java.io.InputStreamReader;
 import java.util.ArrayList;
@@ -38,6 +33,7 @@ import java.util.Calendar;
 
 import ch.epfl.droneproject.DroneApplication;
 import ch.epfl.droneproject.R;
+import ch.epfl.droneproject.activity.VideoFragment;
 
 /**
  *
@@ -215,7 +211,7 @@ public class FlightPlanerModule {
 
     /**
      * Comvert fixes into MarkerOption making maps understand them
-     * @return (ArrayList<MarkerOptions>): The adapted fixes list for the map drawing
+     * @return (ArrayList of MarkerOptions): The adapted fixes list for the map drawing
      */
     public ArrayList<MarkerOptions> getFixesMarkerOptions() {
 
@@ -299,17 +295,25 @@ public class FlightPlanerModule {
      */
     public class MavLinkFlightPlanUtilities{
 
-        public final static String TAG = "MavLinkFlightPlan";
+        private final static String TAG = "MavLinkFlightPlan";
 
         /**
          * The Folder name into internal app storage where to save the mavlink flight plans.
          */
-        public final static String MAVLINK_FOLDER_NAME = "/Mavlink/";
-        public final static String MAVLINK_REMOTE_FOLDER_NAME = "/internal_000/flightplans/";
+        private final static String MAVLINK_FOLDER_NAME = "/Mavlink/";
+        /**
+         * Remote address of the bebop drone
+         */
+        private final static String MAVLINK_REMOTE_ADDRESS = "192.168.42.1";
+        private final static int MAVLINK_REMOTE_PORT = 61;
+        /**
+         * Remote given file name for the uploaded flight plan
+         */
+        private final static String MAVLINK_REMOTE_FILENAME = "/flightPlan.mavlink";
 
         private FlightPlanerModule mFpm;
 
-        public MavLinkFlightPlanUtilities(FlightPlanerModule fpm) {
+        MavLinkFlightPlanUtilities(FlightPlanerModule fpm) {
             this.mFpm = fpm;
         }
 
@@ -342,7 +346,7 @@ public class FlightPlanerModule {
          *
          * @return (String): Filename of the created file
          */
-        public String generateMavlinkFile() {
+        public String generateMavlinkFile(String filename) {
             try {
                 // Create a MavlinkFile generator Instance
                 ARMavlinkFileGenerator generator = new ARMavlinkFileGenerator();
@@ -369,10 +373,13 @@ public class FlightPlanerModule {
                     }
                 }
                 // Then compute the filename and save the file.
-                final Calendar calendar = Calendar.getInstance();
-                final String time = ""+calendar.getTime().getTime();
-                final String filePath = externalDirectory + "/flightPlan"+time+".mavlink";
-                final String filename = "flightPlan"+time+".mavlink";
+                if(filename == null || filename.length() < 1) {
+                    final Calendar calendar = Calendar.getInstance();
+                    final String time = "" + calendar.getTime().getTime();
+                    filename = "flightPlan" + time + ".mavlink";
+                }
+
+                final String filePath = externalDirectory + "/"+filename;
                 final File mavFile = new File(filePath);
                 mavFile.delete();
 
@@ -412,7 +419,7 @@ public class FlightPlanerModule {
          * Notice: The provided parser does not work. I need to implement it in place in this method
          *
          * @param filename (String): The name of the file to open. Assume this file is in MAVLINK_FOLDER_NAME
-         * @return (ArrayList<ARMavlinkMissionItem>): An array of all the read mission items.
+         * @return (ArrayList of ARMavlinkMissionItem): An array of all the read mission items.
          */
         public ArrayList<ARMavlinkMissionItem> openMavlinkFile(String filename){
 
@@ -469,8 +476,6 @@ public class FlightPlanerModule {
                         }
                     }
                 }
-            } catch (FileNotFoundException e) {
-                e.printStackTrace();
             } catch (IOException e) {
                 e.printStackTrace();
             }
@@ -479,7 +484,7 @@ public class FlightPlanerModule {
 
         /**
          * Return a list of all available mavlink file into the MAVLINK_FOLDER_NAME
-         * @return (ArrayList<String>): An array list of all filename as string.
+         * @return (ArrayList of String): An array list of all filename as string.
          */
         public ArrayList<String> getMavlinkFiles(){
 
@@ -506,55 +511,72 @@ public class FlightPlanerModule {
             return filenames;
         }
 
-
-        private ARDataTransferManager dataTransferManager;
-        private ARDataTransferUploader uploader;
-        private ARUtilsManager uploadManager;
-        private HandlerThread uploadHandlerThread;
-        private Runnable uploadRunnable;
-        private Handler uploadHandler;
-
-
-
-        public void transmitMavlinkFile(final Context ctx, final ARFeatureCommon featureCommon, final ARDISCOVERY_PRODUCT_ENUM product) {
+        /**
+         * Transmit the Current open FlightPlan MavlinkFile to the Drone bebop at address
+         * MAVLINK_REMOTE_ADDRESS via MAVLINK_REMOTE_PORT and call it with MAVLINK_REMOTE_FILENAME
+         * Be careful, the Phone must be on the same network as the drone (i.e. on the local drone wifi)
+         * This method first save the current flight plan automatically to take account of exact map
+         * display
+         * @param featureCommon (ARFeatureCommon):
+         */
+        public void transmitMavlinkFile(final ARFeatureCommon featureCommon) {
             try {
+                String autoSave = generateMavlinkFile("autoSaveFlightPlan.mavlink");
 
-                dataTransferManager = new ARDataTransferManager();
-                uploader = dataTransferManager.getARDataTransferUploader();
-                uploadManager = new ARUtilsManager();
+                ARDataTransferManager dataTransferManager = new ARDataTransferManager();
+                ARDataTransferUploader uploader = dataTransferManager.getARDataTransferUploader();
+                ARUtilsManager uploadManager = new ARUtilsManager();
+                HandlerThread uploadHandlerThread = new HandlerThread("mavlink_uploader");
 
-                if (product == ARDISCOVERY_PRODUCT_ENUM.ARDISCOVERY_PRODUCT_SKYCONTROLLER_2) {
-                    uploadManager.initWifiFtp(UsbAccessoryMux.get(ctx).getMux().newMuxRef(), MAVLINK_REMOTE_FOLDER_NAME, 61, "", "");
-                } else {
-                    uploadManager.initWifiFtp(MAVLINK_REMOTE_FOLDER_NAME, 61, "", "");
-                }
+                uploadManager.initWifiFtp(MAVLINK_REMOTE_ADDRESS, MAVLINK_REMOTE_PORT, "", "");
 
-                final UploadListener listener = new UploadListener(featureCommon);
-                uploader.createUploader(uploadManager, mCurrentFlightPlan, mCurrentFlightPlan, listener, null, listener, null, ARDATATRANSFER_UPLOADER_RESUME_ENUM.ARDATATRANSFER_UPLOADER_RESUME_FALSE);
+                String fileToUpload = Environment.getExternalStorageDirectory().toString().concat(MAVLINK_FOLDER_NAME).concat(autoSave);
+                final UploadListener listener = new UploadListener(featureCommon, dataTransferManager, uploader, uploadManager, uploadHandlerThread);
+                uploader.createUploader(uploadManager, MAVLINK_REMOTE_FILENAME, fileToUpload, listener, null, listener, null, ARDATATRANSFER_UPLOADER_RESUME_ENUM.ARDATATRANSFER_UPLOADER_RESUME_FALSE);
 
-                uploadHandlerThread = new HandlerThread("mavlink_uploader");
+
                 uploadHandlerThread.start();
 
-                uploadRunnable = uploader.getUploaderRunnable();
-                uploadHandler = new Handler(uploadHandlerThread.getLooper());
+                Runnable uploadRunnable = uploader.getUploaderRunnable();
+                Handler uploadHandler = new Handler(uploadHandlerThread.getLooper());
 
                 uploadHandler.post(uploadRunnable);
 
             } catch (Exception e) {
-                Log.e("CLASS_NAME", "transmitMavlinkFile exception: " + e.getMessage(), e);
+                Log.e(TAG, "transmitMavlinkFile exception: " + e.getMessage(), e);
             }
         }
 
-        class UploadListener implements ARDataTransferUploaderProgressListener, ARDataTransferUploaderCompletionListener {
+        private class UploadListener implements ARDataTransferUploaderProgressListener, ARDataTransferUploaderCompletionListener {
 
             private final ARFeatureCommon featureCommon;
 
-            private UploadListener(final ARFeatureCommon featureCommon) {
+            private ARDataTransferManager dataTransferManager;
+            private ARDataTransferUploader uploader;
+            private ARUtilsManager uploadManager;
+            private HandlerThread uploadHandlerThread;
+
+            /**
+             * Default Upload Listener constructor
+             * @param featureCommon (ARFeatureCommon)
+             * @param dataTransferManager (ARDataTransferManager)
+             * @param uploader (ARDataTransferUploader)
+             * @param uploadManager (ARUtilsManager)
+             * @param uploadHandlerThread (HandlerThread)
+             */
+            private UploadListener(final ARFeatureCommon featureCommon, ARDataTransferManager dataTransferManager,
+                                   ARDataTransferUploader uploader,  ARUtilsManager uploadManager, HandlerThread uploadHandlerThread) {
                 this.featureCommon = featureCommon;
+                this.dataTransferManager = dataTransferManager;
+                this.uploader = uploader;
+                this.uploadManager = uploadManager;
+                this.uploadHandlerThread = uploadHandlerThread;
             }
 
             @Override
             public void didUploadComplete(Object arg, final ARDATATRANSFER_ERROR_ENUM error) {
+
+                // BE CAREFUL : Do Not Get mConsole in this Thread !
 
                 final Object lock = new Object();
 
@@ -563,6 +585,7 @@ public class FlightPlanerModule {
                         @Override
                         public void run() {
                             synchronized (lock) {
+
                                 uploader.cancelThread();
                                 uploader.dispose();
                                 uploader = null;
@@ -578,7 +601,8 @@ public class FlightPlanerModule {
                                 uploadHandlerThread = null;
 
                                 if (featureCommon != null && error == ARDATATRANSFER_ERROR_ENUM.ARDATATRANSFER_OK) {
-                                    //featureCommon.sendMavlinkStart(mCurrentFlightPlan, ARCOMMANDS_COMMON_MAVLINK_START_TYPE_ENUM.ARCOMMANDS_COMMON_MAVLINK_START_TYPE_FLIGHTPLAN);
+                                    Log.e("MAV", "WORKING and start");
+                                    //featureCommon.sendMavlinkStart("flightPlan.mavlink", ARCOMMANDS_COMMON_MAVLINK_START_TYPE_ENUM.ARCOMMANDS_COMMON_MAVLINK_START_TYPE_FLIGHTPLAN);
                                 }
                             }
                         }
@@ -588,8 +612,6 @@ public class FlightPlanerModule {
             @Override
             public void didUploadProgress(Object arg, float percent) {}
         }
-
-
     }
 
 }

@@ -139,13 +139,14 @@ public class SkyControllerDrone {
 
     /**
      * FOR DEBUG
-     * @param context
+     * @param context (Context):
      */
+    @SuppressWarnings("unused")
     public SkyControllerDrone(Context context){
         mContext = context;
         mListeners = new ArrayList<>();
         mHandler = new Handler(context.getMainLooper());
-        mSKEModule = new SkyControllerExtensionModule(context, mDeviceController,  mSkyControllerState);
+        mSKEModule = new SkyControllerExtensionModule(context, mDeviceController,  mSkyControllerState, mDeviceService);
     }
 
     public SkyControllerDrone(Context context, @NonNull ARDiscoveryDeviceService deviceService) {
@@ -168,7 +169,7 @@ public class SkyControllerDrone {
             ARDiscoveryDevice discoveryDevice = createDiscoveryDevice(deviceService);
             if (discoveryDevice != null) {
                 mDeviceController = createDeviceController(discoveryDevice);
-                mSKEModule = new SkyControllerExtensionModule(context, mDeviceController,  mSkyControllerState);
+                mSKEModule = new SkyControllerExtensionModule(context, mDeviceController,  mSkyControllerState, mDeviceService);
                 discoveryDevice.dispose();
             }
 
@@ -405,6 +406,7 @@ public class SkyControllerDrone {
     }
     //endregion notify listener block
 
+    @SuppressWarnings("FieldCanBeLocal")
     private final SDCardModule.Listener mSDCardModuleListener = new SDCardModule.Listener() {
         @Override
         public void onMatchingMediasFound(final int nbMedias) {
@@ -438,6 +440,7 @@ public class SkyControllerDrone {
     };
 
     private final ARDeviceControllerListener mDeviceControllerListener = new ARDeviceControllerListener() {
+
         @Override
         public void onStateChanged(ARDeviceController deviceController, ARCONTROLLER_DEVICE_STATE_ENUM newState, ARCONTROLLER_ERROR_ENUM error) {
             mSkyControllerState = newState;
@@ -541,8 +544,6 @@ public class SkyControllerDrone {
                     byte AvailabilityState = (byte)((Integer)args.get(ARFeatureCommon.ARCONTROLLER_DICTIONARY_KEY_COMMON_FLIGHTPLANSTATE_AVAILABILITYSTATECHANGED_AVAILABILITYSTATE)).intValue();
                 }
             }
-
-
         }
     };
 

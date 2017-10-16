@@ -4,10 +4,7 @@ import android.content.Context;
 import android.util.AttributeSet;
 
 
-public class ConsoleView extends android.support.v7.widget.AppCompatEditText{
-
-    public static final String messageTest = "Test";
-
+public class ConsoleView extends android.support.v7.widget.AppCompatEditText {
 
     public static final int MAX_NUMBER_LINE = 70;
 

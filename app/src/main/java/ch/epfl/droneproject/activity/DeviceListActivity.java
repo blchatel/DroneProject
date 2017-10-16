@@ -121,6 +121,7 @@ public class DeviceListActivity extends AppCompatActivity{
                         intent = new Intent(DeviceListActivity.this, SkyControllerActivity.class);
                         break;
                     default:
+                        Toast.makeText(view.getContext(), "The type " + product + " is not supported by this sample", Toast.LENGTH_LONG).show();
                         Log.e(TAG, "The type " + product + " is not supported by this sample");
                 }
 

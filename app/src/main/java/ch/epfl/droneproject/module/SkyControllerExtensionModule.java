@@ -1,13 +1,13 @@
 package ch.epfl.droneproject.module;
 
 import android.content.Context;
+
 import com.parrot.arsdk.arcommands.ARCOMMANDS_ARDRONE3_ANIMATIONS_FLIP_DIRECTION_ENUM;
-import com.parrot.arsdk.arcommands.ARCOMMANDS_COMMON_MAVLINK_START_TYPE_ENUM;
 import com.parrot.arsdk.arcontroller.ARCONTROLLER_DEVICE_STATE_ENUM;
 import com.parrot.arsdk.arcontroller.ARDeviceController;
-import com.parrot.arsdk.arcontroller.ARFeatureCommon;
-import com.parrot.arsdk.ardiscovery.ARDISCOVERY_PRODUCT_ENUM;
+import com.parrot.arsdk.ardiscovery.ARDiscoveryDeviceService;
 
+import ch.epfl.droneproject.activity.VideoFragment;
 import ch.epfl.droneproject.drone.ConfigDrone;
 
 public class SkyControllerExtensionModule {
@@ -16,6 +16,7 @@ public class SkyControllerExtensionModule {
     private Context mContext;
     private ARDeviceController mDeviceController;
     private ARCONTROLLER_DEVICE_STATE_ENUM mSkyControllerState;
+    private ARDiscoveryDeviceService mDeviceService;
     private FlightPlanerModule mFlightPlanerModule;
     private AutoPilotModule mAutoPilot;
 
@@ -25,10 +26,11 @@ public class SkyControllerExtensionModule {
      * @param deviceController
      * @param skyController2State
      */
-    public SkyControllerExtensionModule(Context context, ARDeviceController deviceController, ARCONTROLLER_DEVICE_STATE_ENUM skyController2State) {
+    public SkyControllerExtensionModule(Context context, ARDeviceController deviceController, ARCONTROLLER_DEVICE_STATE_ENUM skyController2State, ARDiscoveryDeviceService deviceService) {
         this.mContext = context;
         this.mDeviceController = deviceController;
         this.mSkyControllerState = skyController2State;
+        this.mDeviceService = deviceService;
         this.mFlightPlanerModule = new FlightPlanerModule();
     }
 
@@ -40,7 +42,6 @@ public class SkyControllerExtensionModule {
     public void setDroneConfig(ConfigDrone config){
 
         if ((mDeviceController != null) &&
-                (mSkyControllerState.equals(ARCONTROLLER_DEVICE_STATE_ENUM.ARCONTROLLER_DEVICE_STATE_RUNNING)) &&
                 (mDeviceController.getExtensionState().equals(ARCONTROLLER_DEVICE_STATE_ENUM.ARCONTROLLER_DEVICE_STATE_RUNNING))) {
 
             mDeviceController.getFeatureARDrone3().sendPilotingSettingsMaxAltitude(config.getMaxAlt());
@@ -74,9 +75,10 @@ public class SkyControllerExtensionModule {
      */
     public void flatTrim(){
         if ((mDeviceController != null) &&
-                (mSkyControllerState.equals(ARCONTROLLER_DEVICE_STATE_ENUM.ARCONTROLLER_DEVICE_STATE_RUNNING)) &&
                 (mDeviceController.getExtensionState().equals(ARCONTROLLER_DEVICE_STATE_ENUM.ARCONTROLLER_DEVICE_STATE_RUNNING))) {
+
             mDeviceController.getFeatureARDrone3().sendPilotingFlatTrim();
+            VideoFragment.pushInConsole("Flat trim");
         }
     }
 
@@ -115,7 +117,6 @@ public class SkyControllerExtensionModule {
      */
     public void setPCDM(byte flag, byte roll, byte pitch, byte yaw, byte gaz, int timestampAndSeqNum){
         if ((mDeviceController != null) &&
-                (mSkyControllerState.equals(ARCONTROLLER_DEVICE_STATE_ENUM.ARCONTROLLER_DEVICE_STATE_RUNNING)) &&
                 (mDeviceController.getExtensionState().equals(ARCONTROLLER_DEVICE_STATE_ENUM.ARCONTROLLER_DEVICE_STATE_RUNNING))) {
             mDeviceController.getFeatureARDrone3().setPilotingPCMD(flag, roll, pitch, yaw, gaz, timestampAndSeqNum);
         }
@@ -130,7 +131,6 @@ public class SkyControllerExtensionModule {
      */
     public void takeOff() {
         if ((mDeviceController != null) &&
-                (mSkyControllerState.equals(ARCONTROLLER_DEVICE_STATE_ENUM.ARCONTROLLER_DEVICE_STATE_RUNNING)) &&
                 (mDeviceController.getExtensionState().equals(ARCONTROLLER_DEVICE_STATE_ENUM.ARCONTROLLER_DEVICE_STATE_RUNNING))) {
             mDeviceController.getFeatureARDrone3().sendPilotingTakeOff();
         }
@@ -146,7 +146,6 @@ public class SkyControllerExtensionModule {
      */
     public void land() {
         if ((mDeviceController != null) &&
-                (mSkyControllerState.equals(ARCONTROLLER_DEVICE_STATE_ENUM.ARCONTROLLER_DEVICE_STATE_RUNNING)) &&
                 (mDeviceController.getExtensionState().equals(ARCONTROLLER_DEVICE_STATE_ENUM.ARCONTROLLER_DEVICE_STATE_RUNNING))) {
             mDeviceController.getFeatureARDrone3().sendPilotingLanding();
         }
@@ -163,7 +162,6 @@ public class SkyControllerExtensionModule {
      */
     public void emergency() {
         if ((mDeviceController != null) &&
-                (mSkyControllerState.equals(ARCONTROLLER_DEVICE_STATE_ENUM.ARCONTROLLER_DEVICE_STATE_RUNNING)) &&
                 (mDeviceController.getExtensionState().equals(ARCONTROLLER_DEVICE_STATE_ENUM.ARCONTROLLER_DEVICE_STATE_RUNNING))) {
             mDeviceController.getFeatureARDrone3().sendPilotingEmergency();
         }
@@ -185,7 +183,6 @@ public class SkyControllerExtensionModule {
      */
     public void goHome(byte start){
         if ((mDeviceController != null) &&
-                (mSkyControllerState.equals(ARCONTROLLER_DEVICE_STATE_ENUM.ARCONTROLLER_DEVICE_STATE_RUNNING)) &&
                 (mDeviceController.getExtensionState().equals(ARCONTROLLER_DEVICE_STATE_ENUM.ARCONTROLLER_DEVICE_STATE_RUNNING))) {
             mDeviceController.getFeatureARDrone3().sendPilotingNavigateHome(start);
         }
@@ -207,9 +204,11 @@ public class SkyControllerExtensionModule {
      * offsets it managed to do before this new command and the value of error set to interrupted.
      */
     public void moveBy(float dX, float dY, float dZ, float dPsi) {
+        VideoFragment.pushInConsole(mDeviceController.toString());
         if ((mDeviceController != null) &&
-                (mSkyControllerState.equals(ARCONTROLLER_DEVICE_STATE_ENUM.ARCONTROLLER_DEVICE_STATE_RUNNING)) &&
                 (mDeviceController.getExtensionState().equals(ARCONTROLLER_DEVICE_STATE_ENUM.ARCONTROLLER_DEVICE_STATE_RUNNING))) {
+
+            VideoFragment.pushInConsole("Pass the test");
             mDeviceController.getFeatureARDrone3().sendPilotingMoveBy(dX, dY, dZ, dPsi);
         }
     }
@@ -228,28 +227,26 @@ public class SkyControllerExtensionModule {
      */
     public void makeAFlip(ARCOMMANDS_ARDRONE3_ANIMATIONS_FLIP_DIRECTION_ENUM direction){
         if ((mDeviceController != null) &&
-                (mSkyControllerState.equals(ARCONTROLLER_DEVICE_STATE_ENUM.ARCONTROLLER_DEVICE_STATE_RUNNING)) &&
                 (mDeviceController.getExtensionState().equals(ARCONTROLLER_DEVICE_STATE_ENUM.ARCONTROLLER_DEVICE_STATE_RUNNING))) {
             mDeviceController.getFeatureARDrone3().sendAnimationsFlip(direction);
         }
 
     }
 
-
-
     public void startFlightPlan(){
-        if ((mDeviceController != null) &&
-                (mSkyControllerState.equals(ARCONTROLLER_DEVICE_STATE_ENUM.ARCONTROLLER_DEVICE_STATE_RUNNING)) &&
-                (mDeviceController.getExtensionState().equals(ARCONTROLLER_DEVICE_STATE_ENUM.ARCONTROLLER_DEVICE_STATE_RUNNING))) {
 
-            String filepath = mFlightPlanerModule.getMavlink().generateMavlinkFile();
-            mFlightPlanerModule.getMavlink().transmitMavlinkFile(mContext, mDeviceController.getFeatureCommon(), ARDISCOVERY_PRODUCT_ENUM.ARDISCOVERY_PRODUCT_BEBOP_2);
+        VideoFragment.pushInConsole(mDeviceController.toString());
+        VideoFragment.pushInConsole(mDeviceController.getExtensionState()+" = "+ARCONTROLLER_DEVICE_STATE_ENUM.ARCONTROLLER_DEVICE_STATE_RUNNING);
+
+        if ((mDeviceController != null) &&
+                (mDeviceController.getExtensionState().equals(ARCONTROLLER_DEVICE_STATE_ENUM.ARCONTROLLER_DEVICE_STATE_RUNNING))) {
+            mFlightPlanerModule.getMavlink().transmitMavlinkFile(mDeviceController.getFeatureCommon());
+            VideoFragment.pushInConsole("Start FPL");
         }
     }
 
     public void pauseFlightPlan(){
         if ((mDeviceController != null) &&
-                (mSkyControllerState.equals(ARCONTROLLER_DEVICE_STATE_ENUM.ARCONTROLLER_DEVICE_STATE_RUNNING)) &&
                 (mDeviceController.getExtensionState().equals(ARCONTROLLER_DEVICE_STATE_ENUM.ARCONTROLLER_DEVICE_STATE_RUNNING))) {
             mDeviceController.getFeatureCommon().sendMavlinkPause();
         }
@@ -257,10 +254,8 @@ public class SkyControllerExtensionModule {
 
     public void stopFlightPlan(){
         if ((mDeviceController != null) &&
-                (mSkyControllerState.equals(ARCONTROLLER_DEVICE_STATE_ENUM.ARCONTROLLER_DEVICE_STATE_RUNNING)) &&
                 (mDeviceController.getExtensionState().equals(ARCONTROLLER_DEVICE_STATE_ENUM.ARCONTROLLER_DEVICE_STATE_RUNNING))) {
             mDeviceController.getFeatureCommon().sendMavlinkStop();
         }
     }
-
 }

@@ -142,7 +142,7 @@ public class MapsFragment extends Fragment implements OnMapReadyCallback {
         saveBtn.setOnClickListener(new View.OnClickListener() {
             public void onClick(View v) {
                 hideMarkerDetails();
-                String filename = mFPLM.getMavlink().generateMavlinkFile();
+                String filename = mFPLM.getMavlink().generateMavlinkFile(null);
                 if(filename == null){
                     showToast(getResources().getString(R.string.errorSaving));
                 }else{
