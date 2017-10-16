@@ -15,22 +15,18 @@ public class SkyControllerExtensionModule {
 
     private Context mContext;
     private ARDeviceController mDeviceController;
-    private ARCONTROLLER_DEVICE_STATE_ENUM mSkyControllerState;
-    private ARDiscoveryDeviceService mDeviceService;
     private FlightPlanerModule mFlightPlanerModule;
     private AutoPilotModule mAutoPilot;
 
 
     /**
      * Default SkyController 2 Extension controller
-     * @param deviceController
-     * @param skyController2State
+     * @param context (Context)
+     * @param deviceController (ARDeviceController)
      */
-    public SkyControllerExtensionModule(Context context, ARDeviceController deviceController, ARCONTROLLER_DEVICE_STATE_ENUM skyController2State, ARDiscoveryDeviceService deviceService) {
+    public SkyControllerExtensionModule(Context context, ARDeviceController deviceController) {
         this.mContext = context;
         this.mDeviceController = deviceController;
-        this.mSkyControllerState = skyController2State;
-        this.mDeviceService = deviceService;
         this.mFlightPlanerModule = new FlightPlanerModule();
     }
 

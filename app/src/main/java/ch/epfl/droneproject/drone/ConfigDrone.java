@@ -165,7 +165,6 @@ public class ConfigDrone {
 
     /// GETTERS
 
-
     public float getMaxAlt() {
         return maxAlt;
     }

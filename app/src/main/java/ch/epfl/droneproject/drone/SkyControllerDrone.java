@@ -146,7 +146,7 @@ public class SkyControllerDrone {
         mContext = context;
         mListeners = new ArrayList<>();
         mHandler = new Handler(context.getMainLooper());
-        mSKEModule = new SkyControllerExtensionModule(context, mDeviceController,  mSkyControllerState, mDeviceService);
+        mSKEModule = new SkyControllerExtensionModule(context, mDeviceController);
     }
 
     public SkyControllerDrone(Context context, @NonNull ARDiscoveryDeviceService deviceService) {
@@ -169,7 +169,7 @@ public class SkyControllerDrone {
             ARDiscoveryDevice discoveryDevice = createDiscoveryDevice(deviceService);
             if (discoveryDevice != null) {
                 mDeviceController = createDeviceController(discoveryDevice);
-                mSKEModule = new SkyControllerExtensionModule(context, mDeviceController,  mSkyControllerState, mDeviceService);
+                mSKEModule = new SkyControllerExtensionModule(context, mDeviceController);
                 discoveryDevice.dispose();
             }
 

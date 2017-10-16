@@ -30,6 +30,4 @@ public class DroneApplication extends Application{
         mContext = getApplicationContext();
         mInternalStoragePath = mContext.getFilesDir().getAbsolutePath();
     }
-
-
 }

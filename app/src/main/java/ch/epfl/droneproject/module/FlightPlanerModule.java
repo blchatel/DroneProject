@@ -33,14 +33,11 @@ import java.util.Calendar;
 
 import ch.epfl.droneproject.DroneApplication;
 import ch.epfl.droneproject.R;
-import ch.epfl.droneproject.activity.VideoFragment;
 
 /**
  *
  */
 public class FlightPlanerModule {
-
-    private String mCurrentFlightPlan;
 
     private int mLastPassedFix;
     /**
@@ -61,7 +58,7 @@ public class FlightPlanerModule {
      * Default Flight planner Constructor
      * set the drone to default position and init the mavlink flight plan utilities
      */
-    public FlightPlanerModule() {
+    FlightPlanerModule() {
         this.mCurrentDronePosition = new Fix("Bebop", 0,  0, 5, 0);
         this.mLastPassedFix = 0;
         this.mavlink = new MavLinkFlightPlanUtilities(this);
@@ -108,7 +105,7 @@ public class FlightPlanerModule {
      * @param alt (double): new altitude [m]
      * @param yaw (double): new yaw angle [degree]
      */
-    public void addFix(String title, double lat, double lon, double alt, double yaw){
+    private void addFix(String title, double lat, double lon, double alt, double yaw){
         fixList.add(new Fix(title, lat, lon, alt, yaw));
     }
 
@@ -235,23 +232,24 @@ public class FlightPlanerModule {
     /**
      *
      */
-    class Fix{
+    @SuppressWarnings("WeakerAccess")
+    public class Fix{
 
-        static final String DEFAULT_TITLE = "FIX";
-        static final double DEFAULT_ALTITUDE = 5;
-        static final double DEFAULT_YAW = 0;
+        private static final String DEFAULT_TITLE = "FIX";
+        private static final double DEFAULT_ALTITUDE = 5;
+        private static final double DEFAULT_YAW = 0;
 
-        String title;
-        double lat;
-        double lon;
-        double alt;
-        double yaw;
+        private String title;
+        private double lat;
+        private double lon;
+        private double alt;
+        private double yaw;
 
-        boolean isTakeOff;
-        boolean isLanding;
+        //private boolean isTakeOff;
+        //private boolean isLanding;
 
 
-        Fix(String title, double lat, double lon, double alt, double yaw) {
+        public Fix(String title, double lat, double lon, double alt, double yaw) {
             this.title = title;
 
             this.lat = lat%180;
@@ -265,23 +263,23 @@ public class FlightPlanerModule {
             this.alt = alt;
             this.yaw = yaw%360;
 
-            isTakeOff = false;
-            isLanding = false;
+            //isTakeOff = false;
+            //isLanding = false;
         }
 
-        LatLng getPosition(){
+        public LatLng getPosition(){
             return new LatLng(lat, lon);
         }
 
-        String getTitle() {
+        public String getTitle() {
             return title;
         }
 
-        double getAlt() {
+        public double getAlt() {
             return alt;
         }
 
-        double getYaw() {
+        public double getYaw() {
             return yaw;
         }
 
@@ -293,6 +291,7 @@ public class FlightPlanerModule {
     /**
      *
      */
+    @SuppressWarnings("WeakerAccess")
     public class MavLinkFlightPlanUtilities{
 
         private final static String TAG = "MavLinkFlightPlan";
@@ -381,11 +380,14 @@ public class FlightPlanerModule {
 
                 final String filePath = externalDirectory + "/"+filename;
                 final File mavFile = new File(filePath);
-                mavFile.delete();
+                boolean mavIsDeleted = mavFile.delete();
+
+                if(!mavIsDeleted){
+                    Log.e("MavLinkFlightPlan", "MavFile should be deleted");
+                }
 
                 // Create the file in the mavlink format
                 generator.CreateMavlinkFile(filePath);
-                mCurrentFlightPlan = filename;
                 return filename;
 
             }catch (ARMavlinkException e) {
@@ -443,7 +445,6 @@ public class FlightPlanerModule {
 
                     if(line!=null){
                         mFpm.cleanFix();
-                        mCurrentFlightPlan = filename;
                     }
 
                     // Then for each item, create an item
@@ -519,7 +520,7 @@ public class FlightPlanerModule {
          * display
          * @param featureCommon (ARFeatureCommon):
          */
-        public void transmitMavlinkFile(final ARFeatureCommon featureCommon) {
+        void transmitMavlinkFile(final ARFeatureCommon featureCommon) {
             try {
                 String autoSave = generateMavlinkFile("autoSaveFlightPlan.mavlink");
 
@@ -601,7 +602,6 @@ public class FlightPlanerModule {
                                 uploadHandlerThread = null;
 
                                 if (featureCommon != null && error == ARDATATRANSFER_ERROR_ENUM.ARDATATRANSFER_OK) {
-                                    Log.e("MAV", "WORKING and start");
                                     //featureCommon.sendMavlinkStart("flightPlan.mavlink", ARCOMMANDS_COMMON_MAVLINK_START_TYPE_ENUM.ARCOMMANDS_COMMON_MAVLINK_START_TYPE_FLIGHTPLAN);
                                 }
                             }
