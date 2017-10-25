@@ -120,6 +120,8 @@ public class DeviceListActivity extends AppCompatActivity{
                     case ARDISCOVERY_PRODUCT_SKYCONTROLLER_2:
                         intent = new Intent(DeviceListActivity.this, SkyControllerActivity.class);
                         break;
+                    case ARDISCOVERY_PRODUCT_BEBOP_2:
+                        intent = new Intent(DeviceListActivity.this, BebopActivity.class);
                     default:
                         Toast.makeText(view.getContext(), "The type " + product + " is not supported by this sample", Toast.LENGTH_LONG).show();
                         Log.e(TAG, "The type " + product + " is not supported by this sample");

@@ -53,7 +53,7 @@ public class SkyControllerActivity extends AppCompatActivity {
         // Init the Device service and the SkyControllerDrone. Make this activity listen the SkyControllerDrone instance
         Intent intent = getIntent();
         ARDiscoveryDeviceService service = intent.getParcelableExtra(DeviceListActivity.EXTRA_DEVICE_SERVICE);
-        //mSkyControllerDrone = new SkyControllerDrone(this);
+//        mSkyControllerDrone = new SkyControllerDrone(this);
         mSkyControllerDrone = new SkyControllerDrone(this, service);
         mSkyControllerDrone.addListener(mSkyControllerListener);
     }

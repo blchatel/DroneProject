@@ -3,13 +3,21 @@
     xmlns:tools="http://schemas.android.com/tools"
     android:layout_width="match_parent"
     android:layout_height="match_parent"
-    tools:context=".activity.BebopActivity"
+    tools:context=".activity.SkyControllerActivity"
     android:id="@+id/piloting_view">
 
     <ch.epfl.droneproject.view.BebopVideoView
         android:id="@+id/videoView"
         android:layout_width="match_parent"
         android:layout_height="match_parent"/>
+
+
+    <ch.epfl.droneproject.view.CVClassifierView
+        android:id="@+id/cvcView"
+        android:layout_width="match_parent"
+        android:layout_height="match_parent"
+        android:background="#BB000000"
+        android:visibility="visible" />
 
     <Button
         android:id="@+id/emergencyBt"
