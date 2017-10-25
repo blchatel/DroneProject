@@ -51,7 +51,6 @@ public class BebopVideoView extends TextureView implements TextureView.SurfaceTe
     }
 
     public void displayFrame(ARFrame frame) {
-
         mReadyLock.lock();
 
         if (mIsSurfaceCreated && mSpsBuffer != null) {
@@ -146,7 +145,6 @@ public class BebopVideoView extends TextureView implements TextureView.SurfaceTe
 
     @Override
     public boolean onSurfaceTextureDestroyed(SurfaceTexture surface) {
-
         if (mMediaCodec != null) {
             if (mIsCodecConfigured) {
                 mMediaCodec.stop();

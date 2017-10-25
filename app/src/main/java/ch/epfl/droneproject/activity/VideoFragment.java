@@ -2,6 +2,7 @@ package ch.epfl.droneproject.activity;
 
 import android.os.Bundle;
 import android.support.v4.app.Fragment;
+import android.util.Log;
 import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
@@ -58,14 +59,12 @@ public class VideoFragment extends Fragment {
     public void onResume(){
         super.onResume();
         mCVCView.resume(mVideoView);
-        //mCVCView.pause();
     }
 
     @Override
     public void onPause(){
         super.onPause();
         mCVCView.pause();
-        //mCVCView.resume(mVideoView);
     }
 
 
@@ -95,9 +94,6 @@ public class VideoFragment extends Fragment {
     }
 
     public void displayFrame(ARFrame frame){
-        onResume();
         mVideoView.displayFrame(frame);
-        onPause();
     }
-
 }

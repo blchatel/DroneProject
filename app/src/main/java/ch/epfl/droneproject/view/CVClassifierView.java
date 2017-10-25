@@ -68,7 +68,6 @@ public class CVClassifierView extends View {
 
     public CVClassifierView(Context context, AttributeSet attrs, int defStyleAttr) {
         super(context, attrs, defStyleAttr);
-
         ctx = context;
 
         mLoaderCallback = new BaseLoaderCallback(ctx) {
@@ -152,6 +151,7 @@ public class CVClassifierView extends View {
     }
 
     public void pause() {
+
         if (getVisibility() == View.VISIBLE) {
             openCVThread.interrupt();
 
