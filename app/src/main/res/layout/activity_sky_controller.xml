@@ -35,15 +35,16 @@
             android:layout_height="fill_parent" />
 
         <Button
+            android:id="@+id/emergencyBt"
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
-            android:text="@string/emergency"
-            android:id="@+id/emergencyBt"
             android:layout_alignParentTop="true"
             android:layout_centerHorizontal="true"
             android:width="150dp"
-            android:layout_centerVertical="true"
-            />
+            android:background="@drawable/emergency_btn"
+            android:textColor="#ffff0000"
+            android:text="@string/emergency" />
+
     </RelativeLayout>
 
     <!-- The navigation drawer -->
