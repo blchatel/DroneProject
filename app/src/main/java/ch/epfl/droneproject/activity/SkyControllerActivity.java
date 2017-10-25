@@ -24,6 +24,7 @@ import com.parrot.arsdk.ardiscovery.ARDiscoveryDeviceService;
 import java.util.Locale;
 
 import ch.epfl.droneproject.R;
+import ch.epfl.droneproject.drone.ConfigDrone;
 import ch.epfl.droneproject.drone.SkyControllerDrone;
 
 
@@ -182,12 +183,12 @@ public class SkyControllerActivity extends AppCompatActivity {
                     case ARCOMMANDS_ARDRONE3_PILOTINGSTATE_FLYINGSTATECHANGED_STATE_FLYING:
                     case ARCOMMANDS_ARDRONE3_PILOTINGSTATE_FLYINGSTATECHANGED_STATE_HOVERING:
                         mSkyControllerDrone.skeModule().flatTrim();
+                        mSkyControllerDrone.skeModule().setDroneConfig(ConfigDrone.DFAULT_DRONE_CONFIG);
                         break;
                     default:
                 }
             }
         });
-
     }
 
     /**

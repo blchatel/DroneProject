@@ -140,7 +140,6 @@ public class CVClassifierView extends View {
             Log.d("OpenCV", "OpenCV library found inside package. Using it!");
             mLoaderCallback.onManagerConnected(LoaderCallbackInterface.SUCCESS);
         }
-        //OpenCVLoader.initAsync(OpenCVLoader.OPENCV_VERSION_2_4_6, mView.getContext(), mLoaderCallback);
 
         if (getVisibility() == View.VISIBLE) {
             this.bebopVideoView = bebopVideoView;

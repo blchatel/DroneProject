@@ -55,17 +55,17 @@ public class MapsFragment extends Fragment implements OnMapReadyCallback {
     /**
      * Constant that indicate if we draw the path between the fixes of the flight plan
      */
-    private static final boolean DRAW_PATH = false;
+    private static final boolean DRAW_PATH = true;
 
     /**
      * Constant that indicate if we draw the fixes marker: Its value must be "true"
      */
-    private static final boolean DRAW_FIXES = false;
+    private static final boolean DRAW_FIXES = true;
 
     /**
      * Constant that indicate if we draw the Drone marker: Its value must be "true"
      */
-    private static final boolean DRAW_DRONE = false;
+    private static final boolean DRAW_DRONE = true;
 
 
     /**

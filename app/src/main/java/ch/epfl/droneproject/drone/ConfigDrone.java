@@ -3,6 +3,11 @@ package ch.epfl.droneproject.drone;
 public class ConfigDrone {
 
     /**
+     * Name of the configuration
+     */
+    private String configName;
+
+    /**
      * Max altitude.
      * The drone will not fly over this max altitude when it is in manual piloting.
      * Please note that if you set a max altitude which is below the current drone altitude, the drone will not go to given max altitude.
@@ -110,6 +115,7 @@ public class ConfigDrone {
 
     /**
      * Default Config drone constructor. Wait for :
+     * @param name: (String) Name of the configuration. Could be null
      * @param maxAlt: (float) [m]
      * @param maxDistance: (float) [m]
      * @param shouldNotFlyOver: (byte) [1|0]
@@ -125,10 +131,11 @@ public class ConfigDrone {
      * @param bankedTurn: (byte) [1|0]
      * @param hasHullProtection: (byte) [1|0]
      */
-    private ConfigDrone(float maxAlt, float maxDistance, byte shouldNotFlyOver, float maxTilt,
+    private ConfigDrone(String name, float maxAlt, float maxDistance, byte shouldNotFlyOver, float maxTilt,
                        float maxTiltS, float maxVS, float maxRS, float maxAutonomousHS, float maxAutonomousVS,
                        float maxAutonomousHA, float maxAutonomousVA, float maxAutonomousRS,
                        byte bankedTurn, byte hasHullProtection) {
+        this.configName = name;
         this.maxAlt = maxAlt;
         this.maxDistance = maxDistance;
         this.shouldNotFlyOver = shouldNotFlyOver;
@@ -146,6 +153,7 @@ public class ConfigDrone {
     }
 
     public static final ConfigDrone DFAULT_DRONE_CONFIG = new ConfigDrone(
+            "Default Config",
             (float) 4,  //  float maxAlt [m]
             (float) 5,  //  float maxDistance [m]
             (byte) 1,   //  byte shouldNotFlyOver [1|0]
@@ -164,6 +172,13 @@ public class ConfigDrone {
 
 
     /// GETTERS
+
+    public String getConfigName(){
+        if(configName != null)
+            return configName;
+        else
+            return "unnamed";
+    }
 
     public float getMaxAlt() {
         return maxAlt;

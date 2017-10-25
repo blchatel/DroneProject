@@ -59,6 +59,8 @@ public class SkyControllerExtensionModule {
             mDeviceController.getFeatureARDrone3().sendSpeedSettingsMaxRotationSpeed(config.getMaxRS());
 
             mDeviceController.getFeatureARDrone3().sendSpeedSettingsHullProtection(config.getHasHullProtection());
+
+            VideoFragment.pushInConsole("Config set to "+config.getConfigName());
         }
     }
 
