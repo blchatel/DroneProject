@@ -5,12 +5,10 @@ import android.graphics.Bitmap;
 import android.graphics.Canvas;
 import android.graphics.Color;
 import android.graphics.Paint;
-import android.media.Image;
 import android.os.Handler;
 import android.util.AttributeSet;
 import android.util.Log;
 import android.view.View;
-import android.widget.ImageView;
 
 import org.opencv.android.BaseLoaderCallback;
 import org.opencv.android.LoaderCallbackInterface;
@@ -19,44 +17,40 @@ import org.opencv.android.Utils;
 import org.opencv.core.Mat;
 import org.opencv.core.MatOfRect;
 import org.opencv.core.Rect;
-import org.opencv.core.Size;
 import org.opencv.imgproc.Imgproc;
-import org.opencv.objdetect.CascadeClassifier;
 
 import java.io.File;
-import java.io.FileNotFoundException;
 import java.io.FileOutputStream;
 import java.io.IOException;
 import java.io.InputStream;
-import java.util.Locale;
 
 import ch.epfl.droneproject.R;
+import ch.epfl.droneproject.module.OpenCvModule;
 
 
 public class CVClassifierView extends View {
 
     private final static String TAG = CVClassifierView.class.getSimpleName();
+
+    private final static int FACE_RECT_COLOR = Color.GREEN;
+
     private final Context ctx;
-
-    private CascadeClassifier faceClassifier;
-    private CascadeClassifier palmClassifier;
-    private CascadeClassifier fistClassifier;
-
-    private Handler openCVHandler = new Handler();
-    private Thread openCVThread = null;
-
-    private BebopVideoView bebopVideoView = null;
-
-    private Rect[] facesArray = null;
-
-    private Paint paint;
-
     private final Object lock = new Object();
+
+    private BebopVideoView bebopVideoView;
+    private OpenCvModule mNativeDetector;
+    private Rect face;
+    private boolean faceTracked;
+
+    private float mRelativeFaceSize;
+    private int mAbsoluteFaceSize;
+
+    private Thread openCVThread;
+    private Paint paint;
 
 
 
     private BaseLoaderCallback mLoaderCallback;
-
 
     public CVClassifierView(Context context) {
         this(context, null);
@@ -73,12 +67,45 @@ public class CVClassifierView extends View {
         mLoaderCallback = new BaseLoaderCallback(ctx) {
             @Override
             public void onManagerConnected(int status) {
-                switch (status) {
-                    case LoaderCallbackInterface.SUCCESS:
-                        Log.i("VideoFragment", "OpenCV loaded successfully");
-                        //mOpenCvCameraView.enableView();
-                        // initialize our opencv cascade classifiers
-                        cascadeFile(R.raw.haarcascade_upperbody);
+
+                switch(status){
+                    case BaseLoaderCallback.SUCCESS:
+
+                        // Load native library after(!) OpenCV initialization
+                        System.loadLibrary("MyModule");
+
+                        try {
+                            // load cascade file from application resources
+                            InputStream is = getResources().openRawResource(R.raw.haarcascade_frontalface_alt);
+                            //InputStream is = getResources().openRawResource(R.raw.haarcascade_fullbody);
+                            File cascadeDir = ctx.getDir("cascade", Context.MODE_PRIVATE);
+                            File mCascadeFile = new File(cascadeDir, "haarcascade_frontalface_alt.xml");
+                            //File mCascadeFile = new File(cascadeDir, "haarcascade_fullbody.xml");
+                            FileOutputStream os = new FileOutputStream(mCascadeFile);
+
+                            byte[] buffer = new byte[4096];
+                            int bytesRead;
+                            while ((bytesRead = is.read(buffer)) != -1) {
+                                os.write(buffer, 0, bytesRead);
+                            }
+                            is.close();
+                            os.close();
+
+                            mNativeDetector = new OpenCvModule(mCascadeFile.getAbsolutePath(), 0);
+                            mNativeDetector.start();
+
+                            boolean isDeleted = cascadeDir.delete();
+                            if(!isDeleted){
+                                Log.e(TAG, "Error file il not deleted");
+                            }
+                        } catch (IOException e) {
+                            e.printStackTrace();
+                            Log.e(TAG, "Failed to load cascade. Exception thrown: " + e);
+                        }
+                        Log.e("RECT", "Start thread");
+                        openCVThread = new CascadingThread(ctx);
+                        openCVThread.start();
+
                         break;
                     default:
                         super.onManagerConnected(status);
@@ -87,7 +114,14 @@ public class CVClassifierView extends View {
             }
         };
 
-        // initialize our canvas paint object
+        bebopVideoView = null;
+        face = null;
+        faceTracked = false;
+
+        mRelativeFaceSize = 0.1f;
+        mAbsoluteFaceSize = 0;
+
+        openCVThread = null;
         paint = new Paint();
         paint.setAntiAlias(true);
         paint.setColor(Color.GREEN);
@@ -95,79 +129,47 @@ public class CVClassifierView extends View {
         paint.setStrokeWidth(4f);
     }
 
-    private void cascadeFile(final int id) {
+    public void pause() {
+
+        openCVThread.interrupt();
 
         try {
-            // load cascade file from application resources
-            InputStream is = getResources().openRawResource(id);
-            File cascadeDir = ctx.getDir("cascade", Context.MODE_PRIVATE);
-            final File cascadeFile = new File(cascadeDir, String.format(Locale.US, "%d.xml", id));
-
-            FileOutputStream os = new FileOutputStream(cascadeFile);
-
-            byte[] buffer = new byte[4096];
-            int bytesRead;
-            while ((bytesRead = is.read(buffer)) != -1) {
-                os.write(buffer, 0, bytesRead);
-            }
-            is.close();
-            os.close();
-            Log.e(TAG, cascadeFile.getAbsolutePath());
-
-            faceClassifier = new CascadeClassifier(cascadeFile.getAbsolutePath());
-            //faceClassifier.load(cascadeFile.getAbsolutePath());
-
-            if (faceClassifier.empty()) {
-                Log.e(TAG, "Failed to load cascade classifier");
-                faceClassifier = null;
-            } else {
-                Log.i(TAG, "Loaded cascade classifier from " + cascadeFile.getAbsolutePath());
-            }
-            cascadeDir.delete();
-
-        } catch (IOException e) {
+            openCVThread.join();
+        } catch (InterruptedException e) {
             e.printStackTrace();
-            Log.e(TAG, "Failed to load cascade. Exception thrown: " + e);
         }
+
+        if(mNativeDetector != null) {
+            mNativeDetector.stop();
+        }
+    }
+
+    public void onDestroy() {
+        pause();
     }
 
     public void resume(final BebopVideoView bebopVideoView) {
 
-        if (!OpenCVLoader.initDebug()) {
-            Log.d("OpenCV", "Internal OpenCV library not found. Using OpenCV Manager for initialization");
-            OpenCVLoader.initAsync(OpenCVLoader.OPENCV_VERSION_3_0_0, ctx, mLoaderCallback);
-        } else {
-            Log.d("OpenCV", "OpenCV library found inside package. Using it!");
+        this.bebopVideoView = bebopVideoView;
+
+        if(OpenCVLoader.initDebug()){
+            Log.d(TAG, "OpenCV successfully loaded !");
             mLoaderCallback.onManagerConnected(LoaderCallbackInterface.SUCCESS);
-        }
-
-        if (getVisibility() == View.VISIBLE) {
-            this.bebopVideoView = bebopVideoView;
-
-            openCVThread = new CascadingThread(ctx);
-            openCVThread.start();
+        }else{
+            Log.d(TAG, "OpenCV not loaded !");
+            OpenCVLoader.initAsync(OpenCVLoader.OPENCV_VERSION_3_0_0, ctx, mLoaderCallback);
         }
     }
 
-    public void pause() {
-
-        if (getVisibility() == View.VISIBLE) {
-            openCVThread.interrupt();
-
-            try {
-                openCVThread.join();
-            } catch (InterruptedException e) {
-                e.printStackTrace();
-            }
-        }
-    }
-
-    private float mX = 0;
-    private float mY = 0;
 
     private class CascadingThread extends Thread {
+
         private final Handler handler;
         boolean interrupted = false;
+
+        private Mat mRgba;
+        private Mat mGray;
+
 
         private CascadingThread(final Context ctx) {
             handler = new Handler(ctx.getMainLooper());
@@ -179,34 +181,41 @@ public class CVClassifierView extends View {
 
         @Override
         public void run() {
-            Log.d(TAG, "cascadeRunnable");
 
-            final Mat firstMat = new Mat();
-            final Mat mat = new Mat();
+            mRgba = new Mat();
+            mGray = new Mat();
 
             while (!interrupted) {
                 final Bitmap source = bebopVideoView.getBitmap();
 
                 if (source != null) {
-                    Utils.bitmapToMat(source, firstMat);
-                    firstMat.assignTo(mat);
+                    Utils.bitmapToMat(source, mRgba);
+                    mRgba.assignTo(mGray);
+                    Imgproc.cvtColor(mGray, mGray, Imgproc.COLOR_RGBA2GRAY);
+                    Imgproc.equalizeHist(mGray, mGray);
 
-                    Imgproc.cvtColor(mat, mat, Imgproc.COLOR_RGBA2GRAY);
+                    if (mAbsoluteFaceSize == 0) {
+                        int height = mGray.rows();
+                        if (Math.round(height * mRelativeFaceSize) > 0) {
+                            mAbsoluteFaceSize = Math.round(height * mRelativeFaceSize);
+                        }
+                        mNativeDetector.setMinFaceSize(mAbsoluteFaceSize);
+                    }
 
-                    final int minRows = Math.round(mat.rows() * .12f);
-
-                    final Size minSize = new Size(minRows, minRows);
-                    final Size maxSize = new Size(0, 0);
-
-                    final MatOfRect faces = new MatOfRect();
-
-                    faceClassifier.detectMultiScale(mat, faces);
+                    MatOfRect faces = new MatOfRect();
+                    if (mNativeDetector != null)
+                        mNativeDetector.detect(mGray, faces);
 
                     synchronized (lock) {
-                        facesArray = faces.toArray();
-
-                        mX = firstMat.width() / mat.width();
-                        mY = firstMat.height() / mat.height();
+                        Rect[] facesArray = faces.toArray();
+                        // If a face is found : take the first one and start tracking it
+                        if (facesArray.length > 0) {
+                            face = facesArray[0];
+                            faceTracked = true;
+                        } else {
+                            faceTracked = false;
+                            Log.e("RECT", "LOST OF FACE ! - Draw last known position");
+                        }
 
                         faces.release();
 
@@ -218,16 +227,14 @@ public class CVClassifierView extends View {
                         });
                     }
                 }
-
                 try {
                     sleep(200);
                 } catch (InterruptedException e) {
                     interrupted = true;
                 }
             }
-
-            firstMat.release();
-            mat.release();
+            mRgba.release();
+            mGray.release();
         }
 
         private void runOnUiThread(Runnable r) {
@@ -235,19 +242,19 @@ public class CVClassifierView extends View {
         }
     }
 
-
     @Override
     protected void onDraw(Canvas canvas) {
 
-        Log.e("DRAW", "DRAW");
-
         synchronized(lock) {
-            if (facesArray != null && facesArray.length > 0) {
-                for (Rect target : facesArray) {
-                    Log.i(TAG, "found face size=" + target.area());
+            Log.e("RECT", "DRAW");
+            if (face != null) {
+                if(faceTracked) {
+                    paint.setColor(FACE_RECT_COLOR);
+                }else{
                     paint.setColor(Color.RED);
-                    canvas.drawRect((float) target.tl().x * mX, (float) target.tl().y * mY, (float) target.br().x * mX, (float) target.br().y * mY, paint);
                 }
+
+                canvas.drawRect((float) face.tl().x, (float) face.tl().y, (float) face.br().x, (float) face.br().y, paint);
             }
         }
         super.onDraw(canvas);
