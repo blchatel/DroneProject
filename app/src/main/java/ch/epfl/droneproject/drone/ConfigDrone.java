@@ -159,6 +159,25 @@ public class ConfigDrone {
             (byte) 1,   //  byte shouldNotFlyOver [1|0]
             (float) 8,  //  float maxTilt [degree]
             (float) 8,  //  float maxTiltS [degree/s]
+            (float) 1,//  float maxVS [m/s]
+            (float) 60, //  float maxRS [degree/s]
+            (float) 2,  //  float maxAutonomousHS [m/s]
+            (float) 0.5,//  float maxAutonomousVS [m/s]
+            (float) 1,  //  float maxAutonomousHA [m/s2]
+            (float) 0.5,//  float maxAutonomousVA [m/s2],
+            (float) 60, //  float maxAutonomousRS [degree/s]
+            (byte) 0,   //  byte bankedTurn [1|0]
+            (byte) 0    //  byte hasHullProtection [1|0]
+    );
+
+
+    public static final ConfigDrone INDOOR_DRONE_CONFIG = new ConfigDrone(
+            "Indoor Config",
+            (float) 2,//  float maxAlt [m]
+            (float) 3,  //  float maxDistance [m]
+            (byte) 1,   //  byte shouldNotFlyOver [1|0]
+            (float) 8,  //  float maxTilt [degree]
+            (float) 8,  //  float maxTiltS [degree/s]
             (float) 0.5,//  float maxVS [m/s]
             (float) 60, //  float maxRS [degree/s]
             (float) 2,  //  float maxAutonomousHS [m/s]

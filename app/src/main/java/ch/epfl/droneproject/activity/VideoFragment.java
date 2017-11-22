@@ -6,15 +6,16 @@ import android.util.Log;
 import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
-import android.widget.ImageView;
 import android.widget.TextView;
 
 import com.parrot.arsdk.arcontroller.ARControllerCodec;
 import com.parrot.arsdk.arcontroller.ARFrame;
 
+import ch.epfl.droneproject.DroneApplication;
 import ch.epfl.droneproject.R;
+import ch.epfl.droneproject.module.AutoPilotModule;
 import ch.epfl.droneproject.view.BebopVideoView;
-import ch.epfl.droneproject.view.CVClassifierView;
+import ch.epfl.droneproject.view.OpenCVView;
 import ch.epfl.droneproject.view.ConsoleView;
 
 
@@ -26,13 +27,26 @@ public class VideoFragment extends Fragment {
     private View mView;
 
     private BebopVideoView mVideoView;
-    private CVClassifierView mCVCView;
+    private OpenCVView mCVCView;
     //private ImageView mImageView;
+    private AutoPilotModule mAPM;
 
     private TextView mDroneBatteryLabel;
     private TextView mSkyController2BatteryLabel;
     private TextView mDroneConnectionLabel;
-    private static ConsoleView mConsole;
+    private ConsoleView mConsole;
+
+    /**
+     * Initialize the Fragment as a constructor should.
+     * This method MUST be called in chain with a new instantiation
+     * i.e : new VideoFragment().init(apm);
+     * This method is called before createView()
+     * @param mAPM (AutoPilotModule): the auto pilot module
+     */
+    public VideoFragment init(AutoPilotModule mAPM) {
+        this.mAPM = mAPM;
+        return this;
+    }
 
 
     @Override
@@ -49,8 +63,8 @@ public class VideoFragment extends Fragment {
         mDroneBatteryLabel = mView.findViewById(R.id.droneBatteryLabel);
 
         mDroneConnectionLabel = mView.findViewById(R.id.droneConnectionLabel);
-
         mConsole = mView.findViewById(R.id.console);
+        DroneApplication.getApplication().getConsoleMessage().addListener(mConsole);
 
         return mView;
     }
@@ -58,13 +72,16 @@ public class VideoFragment extends Fragment {
     @Override
     public void onResume(){
         super.onResume();
-        mCVCView.resume(mVideoView);
+        //mCVCView.resume(mVideoView, mAPM);
+        mAPM.resumeThreads(mVideoView, mCVCView);
+
     }
 
     @Override
     public void onPause(){
         super.onPause();
-        mCVCView.pause();
+        //mCVCView.pause();
+        mAPM.pauseThreads();
     }
 
 
@@ -75,12 +92,6 @@ public class VideoFragment extends Fragment {
             mDroneConnectionLabel.setVisibility(View.GONE);
         }
     }
-
-    public static void pushInConsole(String text){
-        if(mConsole != null)
-            mConsole.push(text);
-    }
-
 
     public void setControllerBatteryLabel(String label){
         mSkyController2BatteryLabel.setText(label);

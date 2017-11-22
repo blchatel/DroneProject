@@ -196,7 +196,7 @@ public class FlightPlanerModule {
 
         Matrix matrix = new Matrix();
         matrix.postRotate((float)mCurrentDronePosition.yaw);
-        Bitmap icon = BitmapFactory.decodeResource(DroneApplication.getContext().getResources(), R.drawable.drone30);
+        Bitmap icon = BitmapFactory.decodeResource(DroneApplication.getApplication().getContext().getResources(), R.drawable.drone30);
         Bitmap rotatedIcon =  Bitmap.createBitmap(icon, 0, 0, icon.getWidth(), icon.getHeight(), matrix, true);
 
 

@@ -3,10 +3,12 @@ package ch.epfl.droneproject.module;
 import android.content.Context;
 
 import com.parrot.arsdk.arcommands.ARCOMMANDS_ARDRONE3_ANIMATIONS_FLIP_DIRECTION_ENUM;
+import com.parrot.arsdk.arcommands.ARCOMMANDS_SKYCONTROLLER_COPILOTING_SETPILOTINGSOURCE_SOURCE_ENUM;
 import com.parrot.arsdk.arcontroller.ARCONTROLLER_DEVICE_STATE_ENUM;
 import com.parrot.arsdk.arcontroller.ARDeviceController;
 import com.parrot.arsdk.ardiscovery.ARDiscoveryDeviceService;
 
+import ch.epfl.droneproject.DroneApplication;
 import ch.epfl.droneproject.activity.VideoFragment;
 import ch.epfl.droneproject.drone.ConfigDrone;
 
@@ -15,9 +17,6 @@ public class SkyControllerExtensionModule {
 
     private Context mContext;
     private ARDeviceController mDeviceController;
-    private FlightPlanerModule mFlightPlanerModule;
-    private AutoPilotModule mAutoPilot;
-
 
     /**
      * Default SkyController 2 Extension controller
@@ -27,13 +26,7 @@ public class SkyControllerExtensionModule {
     public SkyControllerExtensionModule(Context context, ARDeviceController deviceController) {
         this.mContext = context;
         this.mDeviceController = deviceController;
-        this.mFlightPlanerModule = new FlightPlanerModule();
     }
-
-    public FlightPlanerModule getFlightPlanModule() {
-        return mFlightPlanerModule;
-    }
-
 
     public void setDroneConfig(ConfigDrone config){
 
@@ -60,7 +53,7 @@ public class SkyControllerExtensionModule {
 
             mDeviceController.getFeatureARDrone3().sendSpeedSettingsHullProtection(config.getHasHullProtection());
 
-            VideoFragment.pushInConsole("Config set to "+config.getConfigName());
+            DroneApplication.getApplication().getConsoleMessage().pushMessage("Config set to "+config.getConfigName());
         }
     }
 
@@ -76,7 +69,14 @@ public class SkyControllerExtensionModule {
                 (mDeviceController.getExtensionState().equals(ARCONTROLLER_DEVICE_STATE_ENUM.ARCONTROLLER_DEVICE_STATE_RUNNING))) {
 
             mDeviceController.getFeatureARDrone3().sendPilotingFlatTrim();
-            VideoFragment.pushInConsole("Flat trim");
+            DroneApplication.getApplication().getConsoleMessage().pushMessage("Flat trim");
+        }
+    }
+
+    public void setController(ARCOMMANDS_SKYCONTROLLER_COPILOTING_SETPILOTINGSOURCE_SOURCE_ENUM source){
+        if ((mDeviceController != null) &&
+                (mDeviceController.getExtensionState().equals(ARCONTROLLER_DEVICE_STATE_ENUM.ARCONTROLLER_DEVICE_STATE_RUNNING))) {
+            mDeviceController.getFeatureSkyController().sendCoPilotingSetPilotingSource(source);
         }
     }
 
@@ -119,6 +119,56 @@ public class SkyControllerExtensionModule {
             mDeviceController.getFeatureARDrone3().setPilotingPCMD(flag, roll, pitch, yaw, gaz, timestampAndSeqNum);
         }
     }
+
+    /**
+     * Set the forward/backward angle of the drone
+     * Note that {@link SkyControllerExtensionModule#setFlag(byte)} should be set to 1 in order to take in account the pitch value
+     * @param pitch value in percentage from -100 to 100
+     */
+    public void setPitch(byte pitch) {
+        if ((mDeviceController != null) &&
+                (mDeviceController.getExtensionState().equals(ARCONTROLLER_DEVICE_STATE_ENUM.ARCONTROLLER_DEVICE_STATE_RUNNING)))  {
+            mDeviceController.getFeatureARDrone3().setPilotingPCMDPitch(pitch);
+        }
+    }
+
+    /**
+     * Set the side angle of the drone
+     * Note that {@link SkyControllerExtensionModule#setFlag(byte)} should be set to 1 in order to take in account the roll value
+     * @param roll value in percentage from -100 to 100
+     */
+    public void setRoll(byte roll) {
+        if ((mDeviceController != null) &&
+                (mDeviceController.getExtensionState().equals(ARCONTROLLER_DEVICE_STATE_ENUM.ARCONTROLLER_DEVICE_STATE_RUNNING)))  {
+            mDeviceController.getFeatureARDrone3().setPilotingPCMDRoll(roll);
+        }
+    }
+
+    public void setYaw(byte yaw) {
+        if ((mDeviceController != null) &&
+                (mDeviceController.getExtensionState().equals(ARCONTROLLER_DEVICE_STATE_ENUM.ARCONTROLLER_DEVICE_STATE_RUNNING)))  {
+            mDeviceController.getFeatureARDrone3().setPilotingPCMDYaw(yaw);
+        }
+    }
+
+    public void setGaz(byte gaz) {
+        if ((mDeviceController != null) &&
+                (mDeviceController.getExtensionState().equals(ARCONTROLLER_DEVICE_STATE_ENUM.ARCONTROLLER_DEVICE_STATE_RUNNING)))  {
+            mDeviceController.getFeatureARDrone3().setPilotingPCMDGaz(gaz);
+        }
+    }
+
+    /**
+     * Take in account or not the pitch and roll values
+     * @param flag 1 if the pitch and roll values should be used, 0 otherwise
+     */
+    public void setFlag(byte flag) {
+        if ((mDeviceController != null) &&
+                (mDeviceController.getExtensionState().equals(ARCONTROLLER_DEVICE_STATE_ENUM.ARCONTROLLER_DEVICE_STATE_RUNNING)))  {
+            mDeviceController.getFeatureARDrone3().setPilotingPCMDFlag(flag);
+        }
+    }
+
 
 
     /**
@@ -202,11 +252,11 @@ public class SkyControllerExtensionModule {
      * offsets it managed to do before this new command and the value of error set to interrupted.
      */
     public void moveBy(float dX, float dY, float dZ, float dPsi) {
-        VideoFragment.pushInConsole(mDeviceController.toString());
+        DroneApplication.getApplication().getConsoleMessage().pushMessage(mDeviceController.toString());
         if ((mDeviceController != null) &&
                 (mDeviceController.getExtensionState().equals(ARCONTROLLER_DEVICE_STATE_ENUM.ARCONTROLLER_DEVICE_STATE_RUNNING))) {
 
-            VideoFragment.pushInConsole("Pass the test");
+            DroneApplication.getApplication().getConsoleMessage().pushMessage("Pass the test");
             mDeviceController.getFeatureARDrone3().sendPilotingMoveBy(dX, dY, dZ, dPsi);
         }
     }
@@ -231,15 +281,15 @@ public class SkyControllerExtensionModule {
 
     }
 
-    public void startFlightPlan(){
+    public void startFlightPlan(FlightPlanerModule fpm){
 
-        VideoFragment.pushInConsole(mDeviceController.toString());
-        VideoFragment.pushInConsole(mDeviceController.getExtensionState()+" = "+ARCONTROLLER_DEVICE_STATE_ENUM.ARCONTROLLER_DEVICE_STATE_RUNNING);
+        DroneApplication.getApplication().getConsoleMessage().pushMessage(mDeviceController.toString());
+        DroneApplication.getApplication().getConsoleMessage().pushMessage(mDeviceController.getExtensionState()+" = "+ARCONTROLLER_DEVICE_STATE_ENUM.ARCONTROLLER_DEVICE_STATE_RUNNING);
 
         if ((mDeviceController != null) &&
                 (mDeviceController.getExtensionState().equals(ARCONTROLLER_DEVICE_STATE_ENUM.ARCONTROLLER_DEVICE_STATE_RUNNING))) {
-            mFlightPlanerModule.getMavlink().transmitMavlinkFile(mDeviceController.getFeatureCommon());
-            VideoFragment.pushInConsole("Start FPL");
+            fpm.getMavlink().transmitMavlinkFile(mDeviceController.getFeatureCommon());
+            DroneApplication.getApplication().getConsoleMessage().pushMessage("Start FPL");
         }
     }
 
@@ -256,4 +306,50 @@ public class SkyControllerExtensionModule {
             mDeviceController.getFeatureCommon().sendMavlinkStop();
         }
     }
+
+    /**
+     * Move the camera.
+     * You can get min and max values for tilt and pan using CameraInfo.
+     * @param tilt (float): Tilt camera consign for the drone (in degree)
+     *                      The value is saturated by the drone.
+     *                      Saturation value is sent by thre drone through CameraSettingsChanged command.
+     * @param pan (float): Pan camera consign for the drone (in degree)
+     *                      The value is saturated by the drone.
+     *                      Saturation value is sent by thre drone through CameraSettingsChanged command.
+     *
+     * You can get min and max values for tilt and pan using CameraSettingsChanged.
+     *
+     * Result:
+     * The drone will move its camera.
+     * Then, event CameraOrientationV2 is triggered.
+     */
+    public void cameraOrientation(float tilt, float pan){
+        if ((mDeviceController != null) &&
+                (mDeviceController.getExtensionState().equals(ARCONTROLLER_DEVICE_STATE_ENUM.ARCONTROLLER_DEVICE_STATE_RUNNING))) {
+            mDeviceController.getFeatureARDrone3().sendCameraOrientationV2(tilt, pan);
+        }
+    }
+
+    /**
+     * Ask the drone to move camera given velocity consign.
+     * @param tilt (float): Tilt camera velocity consign [deg/s]
+     *                      Negative tilt velocity move camera to bottom
+     *                      Positive tilt velocity move camera to top
+     * @param pan (float):  Pan camera velocity consign [deg/s]
+     *                      Negative pan velocity move camera to left
+     *                      Positive pan velocity move camera to right
+     *
+     * You can get min and max values for tilt and pan using CameraSettingsChanged.
+     *
+     * Result:
+     * The drone moves its camera.
+     * Then, event CameraOrientationV2 is triggered.
+     */
+    public void cameraVelocity(float tilt, float pan){
+        if ((mDeviceController != null) &&
+                (mDeviceController.getExtensionState().equals(ARCONTROLLER_DEVICE_STATE_ENUM.ARCONTROLLER_DEVICE_STATE_RUNNING))) {
+            mDeviceController.getFeatureARDrone3().sendCameraVelocity(tilt, pan);
+        }
+    }
+
 }

@@ -48,6 +48,8 @@ public class BebopVideoView extends TextureView implements TextureView.SurfaceTe
         super(context, attrs, defStyleAttr);
         mReadyLock = new ReentrantLock();
         setSurfaceTextureListener(this);
+        Log.e("MAMAN", "BEBOP CONSTRUCT");
+
     }
 
     public void displayFrame(ARFrame frame) {

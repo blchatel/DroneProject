@@ -2,18 +2,18 @@ package ch.epfl.droneproject.view;
 
 import android.content.Context;
 import android.util.AttributeSet;
+import android.util.Log;
+
+import ch.epfl.droneproject.ConsoleMessages;
+import ch.epfl.droneproject.DroneApplication;
 
 
-public class ConsoleView extends android.support.v7.widget.AppCompatEditText {
-
+public class ConsoleView extends android.support.v7.widget.AppCompatEditText implements ConsoleMessages.Listener {
     public static final int MAX_NUMBER_LINE = 70;
-
-    private int currentNumberLine;
+    private int currentNumberLine = 0;
 
     public ConsoleView(Context context) {
         super(context);
-
-        currentNumberLine = 0;
     }
 
     public ConsoleView(Context context, AttributeSet attrs) {
@@ -24,20 +24,19 @@ public class ConsoleView extends android.support.v7.widget.AppCompatEditText {
         super(context, attrs, defStyleAttr);
     }
 
-    public void push(String message){
+    @Override
+    public void newMessageAdded(String message) {
 
         String actualConsole = this.getText().toString();
 
-        if(this.currentNumberLine == MAX_NUMBER_LINE){
+        if (this.currentNumberLine == MAX_NUMBER_LINE) {
+
             int end = actualConsole.lastIndexOf('\n');
             actualConsole = actualConsole.substring(0, end);
             this.currentNumberLine--;
         }
-        this.setText(message + "\n"+ actualConsole);
+
+        this.setText(message + "\n" + actualConsole);
         this.currentNumberLine++;
     }
-
-
-
-
 }

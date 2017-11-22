@@ -35,11 +35,14 @@ import com.parrot.arsdk.arutils.ARUtilsManager;
 import java.util.ArrayList;
 import java.util.List;
 
+import ch.epfl.droneproject.DroneApplication;
 import ch.epfl.droneproject.activity.VideoFragment;
+import ch.epfl.droneproject.module.AutoPilotModule;
 import ch.epfl.droneproject.module.SDCardModule;
 import ch.epfl.droneproject.module.SkyControllerExtensionModule;
 
 public class SkyControllerDrone {
+
     private static final String TAG = "SkyControllerDrone";
 
     public interface Listener {
@@ -129,6 +132,7 @@ public class SkyControllerDrone {
 
     private ARDeviceController mDeviceController;
     private SDCardModule mSDCardModule;
+    private AutoPilotModule mAutoPilotModule;
     private SkyControllerExtensionModule mSKEModule;
 
     private ARCONTROLLER_DEVICE_STATE_ENUM mSkyControllerState;
@@ -149,6 +153,7 @@ public class SkyControllerDrone {
         mListeners = new ArrayList<>();
         mHandler = new Handler(context.getMainLooper());
         mSKEModule = new SkyControllerExtensionModule(context, mDeviceController);
+        mAutoPilotModule = new AutoPilotModule(mSKEModule);
     }
 
     public SkyControllerDrone(Context context, @NonNull ARDiscoveryDeviceService deviceService) {
@@ -172,6 +177,7 @@ public class SkyControllerDrone {
             if (discoveryDevice != null) {
                 mDeviceController = createDeviceController(discoveryDevice);
                 mSKEModule = new SkyControllerExtensionModule(context, mDeviceController);
+                mAutoPilotModule = new AutoPilotModule(mSKEModule);
                 discoveryDevice.dispose();
             }
 
@@ -272,6 +278,14 @@ public class SkyControllerDrone {
      */
     public ARCOMMANDS_ARDRONE3_PILOTINGSTATE_FLYINGSTATECHANGED_STATE_ENUM getFlyingState() {
         return mFlyingState;
+    }
+
+    /**
+     * Give access to the Auto pilot
+     * @return the autopilot : AutoPilotModule
+     */
+    public AutoPilotModule autoPilotModule(){
+        return this.mAutoPilotModule;
     }
 
     /**
@@ -472,6 +486,26 @@ public class SkyControllerDrone {
 
         @Override
         public void onCommandReceived(ARDeviceController deviceController, ARCONTROLLER_DICTIONARY_KEY_ENUM commandKey, ARControllerDictionary elementDictionary) {
+/*
+            if ((commandKey == ARCONTROLLER_DICTIONARY_KEY_ENUM.ARCONTROLLER_DICTIONARY_KEY_SKYCONTROLLER_SKYCONTROLLERSTATE_ATTITUDECHANGED) && (elementDictionary != null)){
+                ARControllerArgumentDictionary<Object> args = elementDictionary.get(ARControllerDictionary.ARCONTROLLER_DICTIONARY_SINGLE_KEY);
+                if (args != null) {
+                    final float q0 = (float)((Double)args.get(ARFeatureSkyController.ARCONTROLLER_DICTIONARY_KEY_SKYCONTROLLER_SKYCONTROLLERSTATE_ATTITUDECHANGED_Q0)).doubleValue();
+                    final float q1 = (float)((Double)args.get(ARFeatureSkyController.ARCONTROLLER_DICTIONARY_KEY_SKYCONTROLLER_SKYCONTROLLERSTATE_ATTITUDECHANGED_Q1)).doubleValue();
+                    final float q2 = (float)((Double)args.get(ARFeatureSkyController.ARCONTROLLER_DICTIONARY_KEY_SKYCONTROLLER_SKYCONTROLLERSTATE_ATTITUDECHANGED_Q2)).doubleValue();
+                    final float q3 = (float)((Double)args.get(ARFeatureSkyController.ARCONTROLLER_DICTIONARY_KEY_SKYCONTROLLER_SKYCONTROLLERSTATE_ATTITUDECHANGED_Q3)).doubleValue();
+
+                    mHandler.post(new Runnable() {
+                        @Override
+                        public void run() {
+                            DroneApplication.getApplication().getConsoleMessage().pushMessage("AC "+q0+", "+q1+", "+q2+", "+q3);
+                            Log.e("MAMAN", "Skycontroller Attitude changed");
+                        }
+                    });
+                }
+            }
+*/
+
             // if event received is the battery update
             if ((commandKey == ARCONTROLLER_DICTIONARY_KEY_ENUM.ARCONTROLLER_DICTIONARY_KEY_COMMON_COMMONSTATE_BATTERYSTATECHANGED) && (elementDictionary != null)) {
                 ARControllerArgumentDictionary<Object> args = elementDictionary.get(ARControllerDictionary.ARCONTROLLER_DICTIONARY_SINGLE_KEY);
@@ -553,7 +587,45 @@ public class SkyControllerDrone {
                 if (args != null) {
                     ARCOMMANDS_COMMON_MAVLINKSTATE_MAVLINKPLAYERRORSTATECHANGED_ERROR_ENUM error =
                             ARCOMMANDS_COMMON_MAVLINKSTATE_MAVLINKPLAYERRORSTATECHANGED_ERROR_ENUM.getFromValue((Integer)args.get(ARFeatureCommon.ARCONTROLLER_DICTIONARY_KEY_COMMON_MAVLINKSTATE_MAVLINKPLAYERRORSTATECHANGED_ERROR));
-                    VideoFragment.pushInConsole(error.toString());
+                    //VideoFragment.pushInConsole(error.toString());
+                }
+            }
+
+            // If altitude change ()
+            else if ((commandKey == ARCONTROLLER_DICTIONARY_KEY_ENUM.ARCONTROLLER_DICTIONARY_KEY_ARDRONE3_PILOTINGSTATE_ATTITUDECHANGED) && (elementDictionary != null)){
+                ARControllerArgumentDictionary<Object> args = elementDictionary.get(ARControllerDictionary.ARCONTROLLER_DICTIONARY_SINGLE_KEY);
+                if (args != null) {
+                    float roll = (float)((Double)args.get(ARFeatureARDrone3.ARCONTROLLER_DICTIONARY_KEY_ARDRONE3_PILOTINGSTATE_ATTITUDECHANGED_ROLL)).doubleValue();
+                    float pitch = (float)((Double)args.get(ARFeatureARDrone3.ARCONTROLLER_DICTIONARY_KEY_ARDRONE3_PILOTINGSTATE_ATTITUDECHANGED_PITCH)).doubleValue();
+                    float yaw = (float)((Double)args.get(ARFeatureARDrone3.ARCONTROLLER_DICTIONARY_KEY_ARDRONE3_PILOTINGSTATE_ATTITUDECHANGED_YAW)).doubleValue();
+
+                    mAutoPilotModule.updateDroneSettings(roll, pitch, yaw);
+                }
+            }
+
+            // Camera info Triggered at connection:
+            else if ((commandKey == ARCONTROLLER_DICTIONARY_KEY_ENUM.ARCONTROLLER_DICTIONARY_KEY_COMMON_CAMERASETTINGSSTATE_CAMERASETTINGSCHANGED) && (elementDictionary != null)){
+                ARControllerArgumentDictionary<Object> args = elementDictionary.get(ARControllerDictionary.ARCONTROLLER_DICTIONARY_SINGLE_KEY);
+                Log.e("MAMAN", "INIT CAM");
+                if (args != null) {
+                    float fov = (float)((Double)args.get(ARFeatureCommon.ARCONTROLLER_DICTIONARY_KEY_COMMON_CAMERASETTINGSSTATE_CAMERASETTINGSCHANGED_FOV)).doubleValue();
+                    float panMax = (float)((Double)args.get(ARFeatureCommon.ARCONTROLLER_DICTIONARY_KEY_COMMON_CAMERASETTINGSSTATE_CAMERASETTINGSCHANGED_PANMAX)).doubleValue();
+                    float panMin = (float)((Double)args.get(ARFeatureCommon.ARCONTROLLER_DICTIONARY_KEY_COMMON_CAMERASETTINGSSTATE_CAMERASETTINGSCHANGED_PANMIN)).doubleValue();
+                    float tiltMax = (float)((Double)args.get(ARFeatureCommon.ARCONTROLLER_DICTIONARY_KEY_COMMON_CAMERASETTINGSSTATE_CAMERASETTINGSCHANGED_TILTMAX)).doubleValue();
+                    float tiltMin = (float)((Double)args.get(ARFeatureCommon.ARCONTROLLER_DICTIONARY_KEY_COMMON_CAMERASETTINGSSTATE_CAMERASETTINGSCHANGED_TILTMIN)).doubleValue();
+
+                    mAutoPilotModule.setCameraInfo(fov, panMin, panMax, tiltMin, tiltMax);
+                }
+            }
+
+            //Current Camera orientation:
+            else if ((commandKey == ARCONTROLLER_DICTIONARY_KEY_ENUM.ARCONTROLLER_DICTIONARY_KEY_ARDRONE3_CAMERASTATE_ORIENTATIONV2) && (elementDictionary != null)){
+                ARControllerArgumentDictionary<Object> args = elementDictionary.get(ARControllerDictionary.ARCONTROLLER_DICTIONARY_SINGLE_KEY);
+                Log.e("MAMAN", "UPDATE CAM");
+                if (args != null) {
+                    float tilt = (float)((Double)args.get(ARFeatureARDrone3.ARCONTROLLER_DICTIONARY_KEY_ARDRONE3_CAMERASTATE_ORIENTATIONV2_TILT)).doubleValue();
+                    float pan = (float)((Double)args.get(ARFeatureARDrone3.ARCONTROLLER_DICTIONARY_KEY_ARDRONE3_CAMERASTATE_ORIENTATIONV2_PAN)).doubleValue();
+                    mAutoPilotModule.setCameraSettings(tilt, pan);
                 }
             }
 

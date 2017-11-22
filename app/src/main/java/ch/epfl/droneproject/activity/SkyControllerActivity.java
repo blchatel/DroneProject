@@ -1,6 +1,7 @@
 package ch.epfl.droneproject.activity;
 
 import android.content.Intent;
+import android.graphics.Color;
 import android.support.v4.app.Fragment;
 import android.support.v4.app.FragmentManager;
 import android.support.v4.app.FragmentStatePagerAdapter;
@@ -23,6 +24,7 @@ import com.parrot.arsdk.ardiscovery.ARDiscoveryDeviceService;
 
 import java.util.Locale;
 
+import ch.epfl.droneproject.DroneApplication;
 import ch.epfl.droneproject.R;
 import ch.epfl.droneproject.drone.ConfigDrone;
 import ch.epfl.droneproject.drone.SkyControllerDrone;
@@ -119,6 +121,26 @@ public class SkyControllerActivity extends AppCompatActivity {
             }
         });
 
+        // init the emergency button
+        final Button autopilot = (Button) findViewById(R.id.autopilot);
+        autopilot.setOnClickListener(new View.OnClickListener() {
+            public void onClick(View v) {
+                if(mSkyControllerDrone.autoPilotModule().isEngaged()){
+                    // disengage
+                    mSkyControllerDrone.autoPilotModule().disengage();
+                    autopilot.setTextColor(Color.RED);
+                    autopilot.setText(R.string.engageap);
+                    autopilot.setBackgroundResource(R.drawable.emergency_btn);
+                }else{
+                    // engage
+                    mSkyControllerDrone.autoPilotModule().engage();
+                    autopilot.setTextColor(Color.GREEN);
+                    autopilot.setText(R.string.disengageap);
+                    autopilot.setBackgroundResource(R.drawable.green_btn);
+                }
+            }
+        });
+
         // inti the download button
         mDownloadBt = (Button)findViewById(R.id.downloadBt);
         mDownloadBt.setEnabled(false);
@@ -164,17 +186,17 @@ public class SkyControllerActivity extends AppCompatActivity {
         });
         (findViewById(R.id.startFLPBt)).setOnClickListener(new View.OnClickListener() {
             public void onClick(View v) {
-                mSkyControllerDrone.skeModule().startFlightPlan();
+                mSkyControllerDrone.autoPilotModule().startAutoFlightPlan();
             }
         });
         (findViewById(R.id.pauseFLPBt)).setOnClickListener(new View.OnClickListener() {
             public void onClick(View v) {
-                mSkyControllerDrone.skeModule().pauseFlightPlan();
+                mSkyControllerDrone.autoPilotModule().pauseAutoFlightPlan();
             }
         });
         (findViewById(R.id.stopFLPBt)).setOnClickListener(new View.OnClickListener() {
             public void onClick(View v) {
-                mSkyControllerDrone.skeModule().stopFlightPlan();
+                mSkyControllerDrone.autoPilotModule().stopAutoFlightPlan();
             }
         });
         (findViewById(R.id.flatTrimBt)).setOnClickListener(new View.OnClickListener() {
@@ -248,10 +270,10 @@ public class SkyControllerActivity extends AppCompatActivity {
 
             switch (position) {
                 case 0:
-                    mVideoFragment = new VideoFragment();
+                    mVideoFragment = new VideoFragment().init(mSkyControllerDrone.autoPilotModule());
                     return mVideoFragment;
                 case 1:
-                    mMapFragment = new MapsFragment().init(mSkyControllerDrone.skeModule().getFlightPlanModule());
+                    mMapFragment = new MapsFragment().init(mSkyControllerDrone.autoPilotModule().getFlightPlanerModule());
                     return mMapFragment;
                 case 2:
                     return new Fragment();
@@ -272,7 +294,7 @@ public class SkyControllerActivity extends AppCompatActivity {
     private final SkyControllerDrone.Listener mSkyControllerListener = new SkyControllerDrone.Listener() {
         @Override
         public void onSkyControllerConnectionChanged(ARCONTROLLER_DEVICE_STATE_ENUM state) {
-            VideoFragment.pushInConsole("SkyCon State:"+state);
+            DroneApplication.getApplication().getConsoleMessage().pushMessage("SkyCon State:"+state);
 
             switch (state)
             {
@@ -298,7 +320,7 @@ public class SkyControllerActivity extends AppCompatActivity {
         @Override
         public void onDroneConnectionChanged(ARCONTROLLER_DEVICE_STATE_ENUM state) {
 
-            VideoFragment.pushInConsole("DroneCon State:"+state);
+            DroneApplication.getApplication().getConsoleMessage().pushMessage("DroneCon State:"+state);
             switch (state)
             {
                 case ARCONTROLLER_DEVICE_STATE_RUNNING:
@@ -323,7 +345,7 @@ public class SkyControllerActivity extends AppCompatActivity {
         @Override
         public void onPilotingStateChanged(ARCOMMANDS_ARDRONE3_PILOTINGSTATE_FLYINGSTATECHANGED_STATE_ENUM state) {
 
-            VideoFragment.pushInConsole("Pilot State:"+state);
+            DroneApplication.getApplication().getConsoleMessage().pushMessage("Pilot State:"+state);
 
             switch (state) {
                 case ARCOMMANDS_ARDRONE3_PILOTINGSTATE_FLYINGSTATECHANGED_STATE_LANDED:
