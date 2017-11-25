@@ -2,7 +2,6 @@ package ch.epfl.droneproject.module;
 
 import android.content.Context;
 import android.graphics.Bitmap;
-import android.graphics.Camera;
 import android.os.Handler;
 import android.util.Log;
 import android.view.MotionEvent;
@@ -10,29 +9,20 @@ import android.view.View;
 
 import com.parrot.arsdk.arcommands.ARCOMMANDS_SKYCONTROLLER_COPILOTING_SETPILOTINGSOURCE_SOURCE_ENUM;
 
-import org.opencv.android.BaseLoaderCallback;
-import org.opencv.android.LoaderCallbackInterface;
-import org.opencv.android.OpenCVLoader;
-import org.opencv.android.Utils;
-import org.opencv.core.Core;
-import org.opencv.core.CvType;
-import org.opencv.core.Mat;
-import org.opencv.core.MatOfPoint;
-import org.opencv.core.Point;
-import org.opencv.core.Rect;
-import org.opencv.core.Scalar;
-import org.opencv.imgproc.Imgproc;
-import org.opencv.imgproc.Moments;
+import org.bytedeco.javacpp.DoublePointer;
+import org.bytedeco.javacpp.IntPointer;
+import org.bytedeco.javacv.AndroidFrameConverter;
+import org.bytedeco.javacv.OpenCVFrameConverter;
+
+import static org.bytedeco.javacpp.opencv_core.*;
+import static org.bytedeco.javacpp.opencv_imgproc.*;
 
 import java.util.ArrayList;
 import java.util.Calendar;
-import java.util.Iterator;
 import java.util.List;
 
 import ch.epfl.droneproject.view.BebopVideoView;
 import ch.epfl.droneproject.view.OpenCVView;
-
-import static org.opencv.core.CvType.CV_8UC1;
 
 
 
@@ -40,9 +30,7 @@ public class AutoPilotModule {
 
     private static final String TAG = "AutoPilot";
 
-
     private boolean isEngaged;
-
 
     private SkyControllerExtensionModule mSKEModule;
     private FlightPlanerModule mFlightPlanerModule;
@@ -125,10 +113,8 @@ public class AutoPilotModule {
 
     // Threads
     public void resumeThreads(BebopVideoView videoView, OpenCVView cvView) {
-        Log.e("MAMAN", "ON RESUME THREAD");
-
         openCVThread = new OpenCVThread(videoView, cvView);
-        openCVThread.initOpenCV();
+        openCVThread.start();
     }
 
     public void pauseThreads() {
@@ -160,27 +146,34 @@ public class AutoPilotModule {
         }
 
         void turnRight(){
-            mSKEModule.setYaw((byte) 50);
+            if(isEngaged)
+              mSKEModule.setYaw((byte) 50);
         }
         void turnLeft(){
-            mSKEModule.setYaw((byte) -50);
+            if(isEngaged)
+                mSKEModule.setYaw((byte) -50);
         }
         void fixYaw(){
-            if(this.yaw != 0) {
+
+            if(isEngaged && this.yaw != 0) {
                 mSKEModule.setYaw((byte) 0);
             }
         }
 
         void climb(){
-            mSKEModule.setGaz((byte) 50);
-            this.gaz = 50;
+            if(isEngaged) {
+                mSKEModule.setGaz((byte) 50);
+                this.gaz = 50;
+            }
         }
         void descend(){
-            mSKEModule.setGaz((byte) -50);
-            this.gaz = -50;
+            if(isEngaged) {
+                mSKEModule.setGaz((byte) -50);
+                this.gaz = -50;
+            }
         }
         void stabilize(){
-            if(this.gaz != 0) {
+            if(isEngaged && this.gaz != 0) {
                 mSKEModule.setGaz((byte) 0);
                 this.gaz = 0;
             }
@@ -220,28 +213,33 @@ public class AutoPilotModule {
             this.pan = pan;
         }
 
-        void moveCamera(float deltaTilt, float deltaPan){
-            float newTilt = Math.min(Math.max(tilt + deltaTilt, tiltMin), tiltMax);
-            float newPan = Math.min(Math.max(pan + deltaPan, panMin), panMax);
-            mSKEModule.cameraOrientation(newTilt, newPan);
+        void moveCamera(float deltaTilt, float deltaPan) {
+            if (isEngaged){
+                float newTilt = Math.min(Math.max(tilt + deltaTilt, tiltMin), tiltMax);
+                float newPan = Math.min(Math.max(pan + deltaPan, panMin), panMax);
+                mSKEModule.cameraOrientation(newTilt, newPan);
+            }
         }
 
         void moveCameraTiltBy(float deltaTilt){
-            float newTilt = Math.min(Math.max(tilt + deltaTilt, tiltMin), tiltMax);
-            mSKEModule.cameraOrientation(newTilt, pan);
+            if(isEngaged){
+                float newTilt = Math.min(Math.max(tilt + deltaTilt, tiltMin), tiltMax);
+                mSKEModule.cameraOrientation(newTilt, pan);
+            }
         }
     }
 
     private class ColorBlobDetector {
         // Color radius for range checking in HSV color space
-        private final Scalar mColorRadius = new Scalar(25,50,50,0);
+        private final CvScalar mColorRadius = new CvScalar(25,50,50,0);
         // Minimum contour area in percent for contours filtering
         private final double mMinContourArea = 0.1;
 
         // Lower and Upper bounds for range checking in HSV color space
-        private Scalar mLowerBound = new Scalar(0);
-        private Scalar mUpperBound = new Scalar(0);
-        private List<MatOfPoint> mContours = new ArrayList<>();
+
+        private List<Mat> mContours = new ArrayList<>();
+        private DoublePointer mLB = new DoublePointer(0);
+        private DoublePointer mUB = new DoublePointer(0);
 
         // Cache
         Mat mPyrDownMat = new Mat();
@@ -251,56 +249,68 @@ public class AutoPilotModule {
         Mat mHierarchy = new Mat();
 
         void setHsvColor(Scalar hsvColor) {
-            double minH = (hsvColor.val[0] >= mColorRadius.val[0]) ? hsvColor.val[0]-mColorRadius.val[0] : 0;
-            double maxH = (hsvColor.val[0]+mColorRadius.val[0] <= 255) ? hsvColor.val[0]+mColorRadius.val[0] : 255;
 
-            mLowerBound.val[0] = minH;
-            mUpperBound.val[0] = maxH;
+            double minH = (hsvColor.blue() >= mColorRadius.blue()) ? hsvColor.blue()-mColorRadius.blue() : 0;
+            double maxH = (hsvColor.blue()+mColorRadius.blue() <= 255) ? hsvColor.blue()+mColorRadius.blue() : 255;
 
-            mLowerBound.val[1] = hsvColor.val[1] - mColorRadius.val[1];
-            mUpperBound.val[1] = hsvColor.val[1] + mColorRadius.val[1];
+            double mLB0 = minH;
+            double mUB0 = maxH;
 
-            mLowerBound.val[2] = hsvColor.val[2] - mColorRadius.val[2];
-            mUpperBound.val[2] = hsvColor.val[2] + mColorRadius.val[2];
+            double mLB1 = hsvColor.green() - mColorRadius.val(1);
+            double mUB1 =  hsvColor.green() + mColorRadius.val(1);
 
-            mLowerBound.val[3] = 0;
-            mUpperBound.val[3] = 255;
+            double mLB2 = hsvColor.red() - mColorRadius.val(2);
+            double mUB2 = hsvColor.red() + mColorRadius.val(2);
+
+            double mLB3 = 0;
+            double mUB3 = 255;
+
+            mLB = new DoublePointer(mLB0, mLB1, mLB2, mLB3);
+            mUB = new DoublePointer(mUB0, mUB1, mUB2, mUB3);
         }
 
         void process(Mat rgbaImage) {
-            Imgproc.pyrDown(rgbaImage, mPyrDownMat);
-            Imgproc.pyrDown(mPyrDownMat, mPyrDownMat);
+            //Smoothes the input image with gaussian kernel and then down-samples it.
+            pyrDown(rgbaImage, mPyrDownMat);
+            pyrDown(mPyrDownMat, mPyrDownMat);
 
-            Imgproc.cvtColor(mPyrDownMat, mHsvMat, Imgproc.COLOR_RGB2HSV_FULL);
+            //Converts input Mat pixels from one color space to another
+            cvtColor(mPyrDownMat, mHsvMat, COLOR_RGB2HSV_FULL);
 
-            Core.inRange(mHsvMat, mLowerBound, mUpperBound, mMask);
-            Imgproc.dilate(mMask, mDilatedMask, new Mat());
+            inRange(mHsvMat, new Mat(1, 1, CV_32SC4, mLB, 0), new Mat(1, 1, CV_32SC4, mUB, 0), mMask);
+            dilate(mMask, mDilatedMask, new Mat());
 
-            List<MatOfPoint> contours = new ArrayList<>();
-
-            Imgproc.findContours(mDilatedMask, contours, mHierarchy, Imgproc.RETR_EXTERNAL, Imgproc.CHAIN_APPROX_SIMPLE);
+            MatVector contours = new MatVector();
+            findContours(mDilatedMask, contours, mHierarchy, RETR_EXTERNAL, CHAIN_APPROX_SIMPLE);
 
             // Find max contour area
             double maxArea = 0;
-            Iterator<MatOfPoint> each = contours.iterator();
-            while (each.hasNext()) {
-                MatOfPoint wrapper = each.next();
-                double area = Imgproc.contourArea(wrapper);
+
+            Log.e("Process", "ContourSize: "+contours.size());
+
+            // Filter contours by area and resize to fit the original image size
+            mContours.clear();
+
+            for(int i = 0; i < contours.size(); i++){
+                Mat wrapper = contours.get(i);
+                double area = contourArea(wrapper);
+                Log.e("Process", "ContourSize: "+area);
+
                 if (area > maxArea)
                     maxArea = area;
             }
-            // Filter contours by area and resize to fit the original image size
-            mContours.clear();
-            each = contours.iterator();
-            while (each.hasNext()) {
-                MatOfPoint contour = each.next();
-                if (Imgproc.contourArea(contour) > mMinContourArea*maxArea) {
-                    Core.multiply(contour, new Scalar(4,4), contour);
+
+            for(int i = 0; i < contours.size(); i++){
+                Mat contour = contours.get(i);
+                if (contourArea(contour) > mMinContourArea*maxArea) {
+                    Log.e("Process", "Multiply and add");
+                    multiply(contour, new Mat(4, 4, 0, 0), contour);
                     mContours.add(contour);
                 }
             }
         }
-        List<MatOfPoint> getContours() {
+
+        List<Mat> getContours() {
             return mContours;
         }
     }
@@ -312,7 +322,6 @@ public class AutoPilotModule {
         private long startClickTime;
 
         private Context ctx;
-        private BaseLoaderCallback mLoaderCallback;
         private BebopVideoView mVideoView;
         private OpenCVView mOpenCVView;
 
@@ -337,27 +346,12 @@ public class AutoPilotModule {
         private Point blobCenter;
 
         private OpenCVThread(BebopVideoView videoView, OpenCVView cvView) {
-            Log.e("MAMAN", "OPENCV");
             ctx = cvView.getContext();
 
-            mLoaderCallback = new BaseLoaderCallback(ctx) {
-                @Override
-                public void onManagerConnected(int status) {
+            System.loadLibrary("opencv_core");
+            System.loadLibrary("opencv_imgproc");
+            System.loadLibrary("jniopencv_core");
 
-                    switch(status){
-                        case BaseLoaderCallback.SUCCESS:
-                            // Load native library after(!) OpenCV initialization
-                            System.loadLibrary("MyModule");
-                            Log.e("MAMAN", "OPENCVSTART TREAD");
-                            openCVThread.start();
-                            break;
-
-                        default:
-                            super.onManagerConnected(status);
-                            break;
-                    }
-                }
-            };
             mVideoView = videoView;
             mOpenCVView = cvView;
 
@@ -366,30 +360,14 @@ public class AutoPilotModule {
             lock = new Object();
 
             mOpenCVView.setOnTouchListener(this);
-
-        }
-
-        private void initOpenCV(){
-
-            if(OpenCVLoader.initDebug()){
-                Log.d(TAG, "OpenCV successfully loaded !");
-                Log.e("MAMAN", "OPENCVSTART SUCCCESS LOADED");
-                mLoaderCallback.onManagerConnected(LoaderCallbackInterface.SUCCESS);
-            }else{
-                Log.d(TAG, "OpenCV not loaded !");
-                Log.e("MAMAN", "OPENCVSTART NOTLOADED");
-                OpenCVLoader.initAsync(OpenCVLoader.OPENCV_VERSION_3_0_0, ctx, mLoaderCallback);
-            }
         }
 
         private void init(int height, int width){
 
-            Log.e("MAMAN", "row:"+height);
-            Log.e("MAMAN", "cols:"+width);
-
             rows = height;
             cols = width;
-            mRgba = new Mat(height, width, CvType.CV_8UC4);
+
+            mRgba = new Mat(height, width, CV_8UC4);
             mGray = new Mat(height, width, CV_8UC1);
 
             mFrameArea = cols*rows;
@@ -411,13 +389,13 @@ public class AutoPilotModule {
         }
 
         private double sqrDistance(Point a, Point b){
-            return (a.x-b.x)*(a.x-b.x) + (a.y-b.y)*(a.y-b.y);
+            return (a.x()-b.x())*(a.x()-b.x()) + (a.y()-b.y())*(a.y()-b.y());
         }
 
         @Override
         public boolean onTouch(View view, MotionEvent event) {
 
-            Log.e("TAG", ""+event.getAction());
+            Log.e(TAG, ""+event.getAction());
 
             switch (event.getAction()) {
                 case MotionEvent.ACTION_DOWN: {
@@ -445,29 +423,32 @@ public class AutoPilotModule {
 
                         if ((x < 0) || (y < 0) || (x > cols) || (y > rows)) return false;
 
-                        Rect touchedRect = new Rect();
-                        touchedRect.x = (x>4) ? x-4 : 0;
-                        touchedRect.y = (y>4) ? y-4 : 0;
-                        touchedRect.width = (x+4 < cols) ? x + 4 - touchedRect.x : cols - touchedRect.x;
-                        touchedRect.height = (y+4 < rows) ? y + 4 - touchedRect.y : rows - touchedRect.y;
+                        int recX = (x>4) ? x-4 : 0;
+                        int recY = (y>4) ? y-4 : 0;
+                        int recW = (x+4 < cols) ? x + 4 - recX : cols - recX;
+                        int recH = (y+4 < rows) ? y + 4 - recY : rows - recY;
 
-                        Mat touchedRegionRgba = mRgba.submat(touchedRect);
+                        Mat touchedRegionRgba = mRgba.rowRange(recY, recY+recH);
+                        touchedRegionRgba = touchedRegionRgba.colRange(recX, recX+recW);
+
                         Mat touchedRegionHsv = new Mat();
-                        Imgproc.cvtColor(touchedRegionRgba, touchedRegionHsv, Imgproc.COLOR_RGB2HSV_FULL);
+                        cvtColor(touchedRegionRgba, touchedRegionHsv, COLOR_RGB2HSV_FULL);
 
                         // Calculate average color of touched region
-                        Scalar blobColorHsv = Core.sumElems(touchedRegionHsv);
-                        int pointCount = touchedRect.width*touchedRect.height;
-                        for (int i = 0; i < blobColorHsv.val.length; i++) {
-                            blobColorHsv.val[i] /= pointCount;
-                        }
+                        Scalar blobColorHsv = sumElems(touchedRegionHsv);
+
+                        int pointCount = recW*recH;
+                        blobColorHsv.red(blobColorHsv.red()/pointCount);
+                        blobColorHsv.green(blobColorHsv.green()/pointCount);
+                        blobColorHsv.blue(blobColorHsv.blue()/pointCount);
+
                         mDetector.setHsvColor(blobColorHsv);
 
                         touchedRegionRgba.release();
                         touchedRegionHsv.release();
 
-                        blobCenter.x = x;
-                        blobCenter.y = y;
+                        blobCenter.x(x);
+                        blobCenter.y(y);
                         mIsColorSelected = true;
                     }
                 }
@@ -477,11 +458,12 @@ public class AutoPilotModule {
 
         @Override
         public void run() {
+
             Log.e(TAG, "RUN");
 
             while(mVideoView.getBitmap() == null){
                 try {
-                    sleep(10);
+                    sleep(50);
                 } catch (InterruptedException e) {
                     Log.e(TAG, "ERROR while sleeping");
                 }
@@ -490,12 +472,16 @@ public class AutoPilotModule {
             // Init final parameters for the thread
             init(mVideoView.getBitmap().getHeight(), mVideoView.getBitmap().getWidth());
 
+            AndroidFrameConverter converterToBitmap = new AndroidFrameConverter();
+            OpenCVFrameConverter.ToMat converterToMat = new OpenCVFrameConverter.ToMat();
+
+
             while (!interrupted) {
                 final Bitmap source = mVideoView.getBitmap();
 
                 if (source != null) {
                     // Get the input frame
-                    Utils.bitmapToMat(source, mRgba);
+                    mRgba = converterToMat.convert(converterToBitmap.convert(source));
 
                     // If a color is selected (i.e. the user has click on the screen once)
                     // Then:
@@ -505,7 +491,10 @@ public class AutoPilotModule {
                     // - Draw them on the frame, and return the frame
                     if (mIsColorSelected) {
                         mDetector.process(mRgba);
-                        List<MatOfPoint> contours = mDetector.getContours();
+
+                        List<Mat> contours = mDetector.getContours();
+
+                        Log.e("Object", ""+contours.size());
 
                         // If no contour ask the user to tap a new color pixel
                         if (contours.size() < 1) {
@@ -513,36 +502,34 @@ public class AutoPilotModule {
                         } else {
                             double d = Double.POSITIVE_INFINITY;
                             int i = 0;
-                            double x = 0, y = 0;
+                            int x = 0, y = 0;
                             // For each found contour, compute the centroid and keep the closest from previous
                             // frame contour
                             for (int j = 0; j < contours.size(); j++) {
 
-                                Moments M = Imgproc.moments(contours.get(j));
-                                pivotCenter.x = (M.get_m10() / M.get_m00());
-                                pivotCenter.y = (M.get_m01() / M.get_m00());
+                                Moments M = moments(contours.get(j));
+                                pivotCenter.x((int)(M.m10() / M.m00()));
+                                pivotCenter.y((int)(M.m01() / M.m00()));
 
                                 double dd = sqrDistance(pivotCenter, blobCenter);
                                 if (dd < d) {
                                     d = dd;
                                     i = j;
-                                    x = pivotCenter.x;
-                                    y = pivotCenter.y;
+                                    x = pivotCenter.x();
+                                    y = pivotCenter.y();
                                 }
                             }
-                            blobCenter.x = x;
-                            blobCenter.y = y;
+                            blobCenter.x(x);
+                            blobCenter.y(y);
 
                             //blobArea = Imgproc.contourArea(contours.get(i));
-                            object = Imgproc.boundingRect(contours.get(i));
+                            Log.e("Object", "Cont: "+contours.get(i));
+                            object = boundingRect(contours.get(i));
                             blobArea = object.area();
-
-                            //Imgproc.drawContours(mRgba, contours, i, CONTOUR_COLOR);
-                            //Imgproc.circle(mRgba, blobCenter, 11, CONTOUR_COLOR, -1);
                         }
 
-                        double deltaX = mFrameCenter.x - blobCenter.x;
-                        double deltaY = mFrameCenter.y - blobCenter.y;
+                        double deltaX = mFrameCenter.x() - blobCenter.x();
+                        double deltaY = mFrameCenter.y() - blobCenter.y();
 
                         // apply correction
                         if (blobArea / mFrameArea < AREA_THRESHOLD) {
@@ -574,12 +561,13 @@ public class AutoPilotModule {
                         }
                     }
 
-
                     // TODO be sure of this synchronized call see in the draw of opencvview if correct
                     synchronized (lock) {
                         runOnUiThread(new Runnable() {
                             @Override
                             public void run() {
+                                if(object != null)
+                                    Log.e("Object", "Object: "+object.x() +", "+ object.y() +", "+object.height()+", "+object.width());
                                 mOpenCVView.setObject(object, blobCenter);
                                 mOpenCVView.invalidate();
                             }
@@ -596,7 +584,6 @@ public class AutoPilotModule {
             mRgba.release();
             mGray.release();
         }
-
         private void runOnUiThread(Runnable r) {
             handler.post(r);
         }
