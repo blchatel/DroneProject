@@ -4,11 +4,10 @@ import android.content.Context;
 import android.graphics.Canvas;
 import android.graphics.Color;
 import android.graphics.Paint;
+import android.graphics.Rect;
 import android.util.AttributeSet;
 import android.view.View;
 
-import org.bytedeco.javacpp.opencv_core.Rect;
-import org.bytedeco.javacpp.opencv_core.Point;
 
 public class OpenCVView extends View {
 
@@ -18,8 +17,7 @@ public class OpenCVView extends View {
     private final Context ctx;
     private Paint paint;
 
-    private Rect object;
-    private Point objectCenter;
+    private MyCvRect object;
 
     public OpenCVView(Context context) {
         this(context, null);
@@ -39,24 +37,34 @@ public class OpenCVView extends View {
         paint.setStyle(Paint.Style.STROKE);
         paint.setStrokeWidth(4f);
 
+        object = new MyCvRect();
 
     }
 
-    public void setObject(Rect object, Point center){
-        this.objectCenter = center;
-        this.object = object;
+    public void setObject(int x1, int y1, int x2, int y2){
+        this.object.setRect(x1, y1, x2, y2);
     }
 
     @Override
     protected void onDraw(Canvas canvas) {
-
-        if(object != null) {
-            canvas.drawRect((float) object.tl().x(), (float) object.tl().y(), (float) object.br().x(), (float) object.br().y(), paint);
-
-            if(objectCenter != null){
-                canvas.drawCircle((float)objectCenter.x(), (float)objectCenter.y(), 11, paint);
-            }
-        }
+        // TODO read drawRect doc to be sure of input points
+        canvas.drawRect(object.x1, object.y1, object.x2, object.x2, paint);
+        canvas.drawCircle(object.xc, object.yc, 11, paint);
         super.onDraw(canvas);
+    }
+
+
+    public class MyCvRect{
+
+        float x1, y1, x2, y2, xc, yc;
+
+        private void setRect(int x1, int y1, int x2, int y2){
+            this.x1 = x1;
+            this.y1 = y1;
+            this.x2 = x2;
+            this.y2 = y2;
+            this.xc = (x1+x2)/2;
+            this.yc = (y1+y2)/2;
+        }
     }
 }
