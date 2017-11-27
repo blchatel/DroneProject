@@ -10,6 +10,7 @@ import android.view.View;
 import com.parrot.arsdk.arcommands.ARCOMMANDS_SKYCONTROLLER_COPILOTING_SETPILOTINGSOURCE_SOURCE_ENUM;
 
 import org.bytedeco.javacpp.Loader;
+import org.bytedeco.javacpp.indexer.UByteBufferIndexer;
 import org.bytedeco.javacpp.indexer.UByteRawIndexer;
 
 import static org.bytedeco.javacpp.opencv_core.*;
@@ -257,8 +258,8 @@ public class AutoPilotModule {
             mLB = new CvScalar(0);
             mUB = new CvScalar(0);
 
-            mPyrDown2Mat = IplImage.create(width/2, height/2, IPL_DEPTH_8U, 3);
-            mPyrDown4Mat = IplImage.create(width/4, height/4, IPL_DEPTH_8U, 3);
+            mPyrDown2Mat = IplImage.create(width/2, height/2, IPL_DEPTH_8U, 4);
+            mPyrDown4Mat = IplImage.create(width/4, height/4, IPL_DEPTH_8U, 4);
             mHsvMat = IplImage.create(width/4, height/4, IPL_DEPTH_8U, 3);
             mMask = IplImage.create(width/4, height/4, IPL_DEPTH_8U, 1);
             mDilatedMask = IplImage.create(width/4, height/4, IPL_DEPTH_8U, 1);
@@ -348,11 +349,11 @@ public class AutoPilotModule {
         boolean interrupted;
         private final Object lock;
 
-        IplImage grabbedImage;
+        private IplImage grabbedImage;
 
-        private int rows, cols;
         private ColorBlobDetector mDetector;
-        int x1, y1, x2, y2;
+        private int rows, cols;
+        private int x1, y1, x2, y2;
 
         private double mFrameArea, mDistance, blobArea;
         private Point mFrameCenter, pivotCenter, blobCenter;
@@ -398,6 +399,13 @@ public class AutoPilotModule {
             interrupted = true;
         }
 
+        /**
+         * Compute square distance between two points
+         * This save a sqrt computation time
+         * @param a (Point): First point
+         * @param b (Point): Second point
+         * @return (double) the corresponding sqr distance
+         */
         private double sqrDistance(Point a, Point b){
             return (a.x()-b.x())*(a.x()-b.x()) + (a.y()-b.y())*(a.y()-b.y());
         }
@@ -422,10 +430,12 @@ public class AutoPilotModule {
                         int x = (int)event.getX() - xOffset;
                         int y = (int)event.getY() - yOffset;
 
+                        // Stop here if the touch is outside the view
                         if ((x < 0) || (y < 0) || (x > cols) || (y > rows)) return false;
 
                         calibrate(x, y);
 
+                        // Display some information after calibration
                         Log.i(TAG, "View: (" + view.getWidth() + ", " + view.getHeight() + ")");
                         Log.i(TAG, "CR: (" + cols + ", " + rows + ")");
                         Log.i(TAG, "OFFSET: (" + xOffset + ", " + yOffset + ")");
@@ -438,34 +448,44 @@ public class AutoPilotModule {
 
         private void calibrate(int x, int y){
 
-            System.out.println("Calibrate");
+            // Check if ww can calibrate or not
+            if(rows == 0 || cols == 0){
+                Log.e(TAG, "Nothing to calibrate on");
+                return;
+            }
+            Log.i(TAG, "Calibrate");
 
+            // First create a square representing the touched region. This square is 8x8 pixel
             int halfRegionSide = 4;
 
+            // Create the square or rectangle dimension in border cases
             int recX = (x>halfRegionSide) ? x-halfRegionSide : 0;
             int recY = (y>halfRegionSide) ? y-halfRegionSide : 0;
             int recW = (x+halfRegionSide < cols) ? x + halfRegionSide - recX : cols - recX;
             int recH = (y+halfRegionSide < rows) ? y + halfRegionSide - recY : rows - recY;
-
             CvRect r = new CvRect(recX, recY, recW, recH);
 
+            // Croop the original image by Copy original image (only ROI) to the cropped image
             cvSetImageROI(grabbedImage, r);
             IplImage touchedRegionRgba = cvCreateImage(cvGetSize(grabbedImage), grabbedImage.depth(), grabbedImage.nChannels());
-            // Copy original image (only ROI) to the cropped image
             cvCopy(grabbedImage, touchedRegionRgba);
 
-            IplImage touchedRegionHsv = cvCreateImage(cvGetSize(grabbedImage), grabbedImage.depth(), grabbedImage.nChannels());
+            IplImage touchedRegionHsv = cvCreateImage(cvGetSize(touchedRegionRgba), touchedRegionRgba.depth(), touchedRegionRgba.nChannels()-1);
             cvCvtColor(touchedRegionRgba, touchedRegionHsv, COLOR_RGB2HSV_FULL);
 
-            UByteRawIndexer idx = touchedRegionHsv.createIndexer();
+            cvResetImageROI(grabbedImage);
 
+            // Create an indexer on touchedRegionHsv to easily get the pixel values
+            UByteBufferIndexer idx = touchedRegionHsv.createIndexer();
+
+            // Find the mean of each HSV channels in the touched region
             double H = 0;
             double S = 0;
             double V = 0;
 
-            for(int i = 0; i < halfRegionSide; i++){
-                for(int j = 0; j < halfRegionSide; j++){
-                    System.out.println(i+", "+j+", "+idx.get(i, j, 0)+", "+idx.get(i, j, 1)+", "+idx.get(i, j, 2));
+            for(int i = 0; i < recW; i++){
+                for(int j = 0; j < recH; j++){
+                    Log.d(TAG, i+", "+j+", "+idx.get(i, j, 0)+", "+idx.get(i, j, 1)+", "+idx.get(i, j, 2));
                     H += idx.get(i, j, 0);
                     S += idx.get(i, j, 1);
                     V += idx.get(i, j, 2);
@@ -477,13 +497,12 @@ public class AutoPilotModule {
             S /= pointCount;
             V /= pointCount;
 
+            // Set the new value after calibration
             mDetector.setHsvColor(H, S, V);
-
             blobCenter.x(x);
             blobCenter.y(y);
             mIsColorSelected = true;
 
-            cvResetImageROI(grabbedImage);
         }
 
 
@@ -492,6 +511,8 @@ public class AutoPilotModule {
 
             Log.e(TAG, "RUN");
 
+            // Sleep until first bitmap image available :
+            // TODO find a better way to not have to wait
             while(mVideoView.getBitmap() == null){
                 try {
                     sleep(50);
@@ -500,96 +521,101 @@ public class AutoPilotModule {
                 }
             }
 
-            // Init final parameters for the thread
+            // Init final parameters for the thread from the image dimension
             init(mVideoView.getBitmap().getHeight(), mVideoView.getBitmap().getWidth());
+
 
             CvMemStorage storage = CvMemStorage.create();
             List<CvRect> contours;
 
             while (!interrupted) {
                 cvClearMemStorage(storage);
-
                 final Bitmap source = mVideoView.getBitmap();
 
-                // TODO convert Bitmap -> IplImage
+                if (source != null) {
+                    // Get the input frame
+                    source.copyPixelsToBuffer(grabbedImage.getByteBuffer());
 
+                    // If a color is selected (i.e. the user has click on the screen once)
+                    // Then:
+                    // - Process the mRgba image to find blobs contours
+                    // - Get the contours and find the contours which is the closest of previous found center.
+                    // - Compute the approximate area and centroid of this new contour
+                    // - Draw them on the frame, and return the frame
+                    if (mIsColorSelected) {
 
-                if (mIsColorSelected) {
+                        mDetector.process(grabbedImage);
+                        contours = mDetector.getContours();
 
-                    mDetector.process(grabbedImage);
-                    contours = mDetector.getContours();
+                        // If no contour ask the user to tap a new color pixel
+                        if (contours.size() < 1) {
+                            mIsColorSelected = false;
+                        } else {
 
-                    // If no contour ask the user to tap a new color pixel
-                    if (contours.size() < 1) {
-                        mIsColorSelected = false;
-                    } else {
+                            double d = Double.POSITIVE_INFINITY;
+                            int x = 0, y = 0, w = 0, h = 0;
 
-                        double d = Double.POSITIVE_INFINITY;
-                        int x=0, y=0, w=0, h=0;
+                            // For each found contour, compute the centroid and keep the closest from previous
+                            // frame contour
+                            for (int j = 0; j < contours.size(); j++) {
 
-                        // For each found contour, compute the centroid and keep the closest from previous
-                        // frame contour
-                        for (int j = 0; j < contours.size(); j++) {
+                                CvRect rect = contours.get(j);
+                                pivotCenter.x(rect.x() + rect.width() / 2);
+                                pivotCenter.y(rect.y() + rect.height() / 2);
 
-                            CvRect rect = contours.get(j);
-                            pivotCenter.x(rect.x()+rect.width()/2);
-                            pivotCenter.y(rect.y()+rect.height()/2);
-
-                            double dd = sqrDistance(pivotCenter, blobCenter);
-                            if (dd < d) {
-                                d = dd;
-                                x = pivotCenter.x();
-                                y = pivotCenter.y();
-                                w = rect.width();
-                                h = rect.height();
+                                double dd = sqrDistance(pivotCenter, blobCenter);
+                                if (dd < d) {
+                                    d = dd;
+                                    x = pivotCenter.x();
+                                    y = pivotCenter.y();
+                                    w = rect.width();
+                                    h = rect.height();
+                                }
                             }
+
+                            blobCenter.x(x);
+                            blobCenter.y(y);
+                            blobArea = w * h;
+
+                            x1 = x - w / 2;
+                            x2 = x + w / 2;
+                            y1 = y - h / 2;
+                            y2 = y + h / 2;
                         }
 
-                        blobCenter.x(x);
-                        blobCenter.y(y);
-                        blobArea = w*h;
+                        double deltaX = mFrameCenter.x() - blobCenter.x();
+                        double deltaY = mFrameCenter.y() - blobCenter.y();
 
-                        x1 = x-w/2;
-                        x2 = x+w/2;
-                        y1 = y-h/2;
-                        y2 = y+h/2;
-                    }
-
-                    double deltaX = mFrameCenter.x() - blobCenter.x();
-                    double deltaY = mFrameCenter.y() - blobCenter.y();
-
-                    // apply correction
-                    if (blobArea / mFrameArea < AREA_THRESHOLD) {
-                        Log.e(TAG, "Become Closer");
-                    }
-
-                    if (Math.abs(deltaX) > mDistance) {
-
-                        if(deltaX > 0) {
-                            Log.e(TAG, "Correct x right");
-                            droneSettings.turnRight();
-                            //droneSettings.turnLeft();
-                        }else{
-                            Log.e(TAG, "Correct x left");
-                            droneSettings.turnLeft();
-                            //droneSettings.turnRight();
+                        // apply correction
+                        if (blobArea / mFrameArea < AREA_THRESHOLD) {
+                            Log.e(TAG, "Become Closer");
                         }
-                    }
-                    else{
-                        droneSettings.fixYaw();
-                    }
-                    if (Math.abs(deltaY) > mDistance) {
-                        if(deltaY > 0) {
-                            Log.e(TAG, "Correct y DOWN");
-                            cameraSettings.moveCameraTiltBy(5);
+
+                        if (Math.abs(deltaX) > mDistance) {
+
+                            if (deltaX > 0) {
+                                Log.e(TAG, "Correct x right");
+                                droneSettings.turnRight();
+                                //droneSettings.turnLeft();
+                            } else {
+                                Log.e(TAG, "Correct x left");
+                                droneSettings.turnLeft();
+                                //droneSettings.turnRight();
+                            }
+                        } else {
+                            droneSettings.fixYaw();
                         }
-                        else{
-                            Log.e(TAG, "Correct y UP");
-                            cameraSettings.moveCameraTiltBy(-5);
+                        if (Math.abs(deltaY) > mDistance) {
+                            if (deltaY > 0) {
+                                Log.e(TAG, "Correct y DOWN");
+                                cameraSettings.moveCameraTiltBy(5);
+                            } else {
+                                Log.e(TAG, "Correct y UP");
+                                cameraSettings.moveCameraTiltBy(-5);
+                            }
                         }
                     }
                 }
-
                 // TODO be sure of this synchronized call see in the draw of opencvview if correct
                 synchronized (lock) {
                     runOnUiThread(new Runnable() {
@@ -600,6 +626,7 @@ public class AutoPilotModule {
                         }
                     });
                 }
+
                 try {
                     sleep(10);
                 } catch (InterruptedException e) {

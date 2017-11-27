@@ -5,6 +5,7 @@ import android.graphics.Canvas;
 import android.graphics.Color;
 import android.graphics.Paint;
 import android.graphics.Rect;
+import android.graphics.RectF;
 import android.util.AttributeSet;
 import android.view.View;
 
@@ -48,7 +49,7 @@ public class OpenCVView extends View {
     @Override
     protected void onDraw(Canvas canvas) {
         // TODO read drawRect doc to be sure of input points
-        canvas.drawRect(object.x1, object.y1, object.x2, object.x2, paint);
+        canvas.drawRect(object.x1, object.y1, object.x2, object.y2, paint);
         canvas.drawCircle(object.xc, object.yc, 11, paint);
         super.onDraw(canvas);
     }
