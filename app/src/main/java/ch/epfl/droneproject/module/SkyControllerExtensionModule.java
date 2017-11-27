@@ -14,7 +14,6 @@ import ch.epfl.droneproject.drone.ConfigDrone;
 
 public class SkyControllerExtensionModule {
 
-
     private Context mContext;
     private ARDeviceController mDeviceController;
 
@@ -79,6 +78,15 @@ public class SkyControllerExtensionModule {
             mDeviceController.getFeatureSkyController().sendCoPilotingSetPilotingSource(source);
         }
     }
+
+    public void grabAxis(int buttons, int axis){
+
+        if ((mDeviceController != null) &&
+                (mDeviceController.getExtensionState().equals(ARCONTROLLER_DEVICE_STATE_ENUM.ARCONTROLLER_DEVICE_STATE_RUNNING))) {
+            mDeviceController.getFeatureMapper().sendGrab(buttons, axis);
+        }
+    }
+
 
 
     /**

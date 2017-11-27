@@ -65,11 +65,18 @@ public class AutoPilotModule {
     public void engage(){
         this.isEngaged = true;
         mSKEModule.setController(ARCOMMANDS_SKYCONTROLLER_COPILOTING_SETPILOTINGSOURCE_SOURCE_ENUM.ARCOMMANDS_SKYCONTROLLER_COPILOTING_SETPILOTINGSOURCE_SOURCE_CONTROLLER);
+
+        int b1 = 1;
+        b1 = b1 | (1 << 1);
+        b1 = b1 | (1 << 2);
+        b1 = b1 | (1 << 3);
+        mSKEModule.grabAxis(0, b1);
     }
 
     public void disengage(){
         this.isEngaged = false;
         mSKEModule.setController(ARCOMMANDS_SKYCONTROLLER_COPILOTING_SETPILOTINGSOURCE_SOURCE_ENUM.ARCOMMANDS_SKYCONTROLLER_COPILOTING_SETPILOTINGSOURCE_SOURCE_SKYCONTROLLER);
+        mSKEModule.grabAxis(0, 0);
     }
 
     public FlightPlanerModule getFlightPlanerModule() {
@@ -92,6 +99,9 @@ public class AutoPilotModule {
 
     public void updateDroneSettings(float roll, float pitch, float yaw){
         droneSettings.update(roll, pitch, yaw);
+    }
+    public void updateDroneSettings(double lat, double lon, double alt){
+        droneSettings.update(lat, lon, alt);
     }
 
     /**
@@ -133,6 +143,8 @@ public class AutoPilotModule {
     private class DroneStatesAndSettings{
 
         private float roll, pitch, yaw, gaz;
+        private double lat, lon, alt;
+
 
         DroneStatesAndSettings(){
             update(0, 0, 0);
@@ -143,6 +155,13 @@ public class AutoPilotModule {
             this.roll = roll;
             this.pitch = pitch;
             this.yaw = yaw;
+            mFlightPlanerModule.updateDroneOrientation(yaw);
+        }
+        void update(double lat, double lon, double alt){
+            this.lat = lat;
+            this.lon = lon;
+            this.alt = alt;
+            mFlightPlanerModule.updateDronePosition(lat, lon, alt);
         }
 
         void turnRight(){

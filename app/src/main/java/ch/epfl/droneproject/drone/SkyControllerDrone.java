@@ -35,11 +35,10 @@ import com.parrot.arsdk.arutils.ARUtilsManager;
 import java.util.ArrayList;
 import java.util.List;
 
-import ch.epfl.droneproject.DroneApplication;
-import ch.epfl.droneproject.activity.VideoFragment;
 import ch.epfl.droneproject.module.AutoPilotModule;
-import ch.epfl.droneproject.module.SDCardModule;
 import ch.epfl.droneproject.module.SkyControllerExtensionModule;
+
+
 
 public class SkyControllerDrone {
 
@@ -103,26 +102,11 @@ public class SkyControllerDrone {
         void onFrameReceived(ARFrame frame);
 
         /**
-         * Called before medias will be downloaded
-         * Called in the main thread
-         * @param nbMedias the number of medias that will be downloaded
+         *
          */
-        void onMatchingMediasFound(int nbMedias);
+        void onAutoPilotDisengage();
 
-        /**
-         * Called each time the progress of a download changes
-         * Called in the main thread
-         * @param mediaName the name of the media
-         * @param progress the progress of its download (from 0 to 100)
-         */
-        void onDownloadProgressed(String mediaName, int progress);
-
-        /**
-         * Called when a media download has ended
-         * Called in the main thread
-         * @param mediaName the name of the media
-         */
-        void onDownloadComplete(String mediaName);
+        void onDronePositionChange();
     }
 
     private final List<Listener> mListeners;
@@ -131,14 +115,12 @@ public class SkyControllerDrone {
     private final Context mContext;
 
     private ARDeviceController mDeviceController;
-    private SDCardModule mSDCardModule;
     private AutoPilotModule mAutoPilotModule;
     private SkyControllerExtensionModule mSKEModule;
 
     private ARCONTROLLER_DEVICE_STATE_ENUM mSkyControllerState;
     private ARCONTROLLER_DEVICE_STATE_ENUM mDroneState;
     private ARCOMMANDS_ARDRONE3_PILOTINGSTATE_FLYINGSTATECHANGED_STATE_ENUM mFlyingState;
-    private String mCurrentRunId;
     private ARDiscoveryDeviceService mDeviceService;
     private ARUtilsManager mFtpListManager;
     private ARUtilsManager mFtpQueueManager;
@@ -188,10 +170,8 @@ public class SkyControllerDrone {
 
                 mFtpListManager.initFtp(mContext, deviceService, ARUTILS_DESTINATION_ENUM.ARUTILS_DESTINATION_DRONE, ARUTILS_FTP_TYPE_ENUM.ARUTILS_FTP_TYPE_GENERIC);
                 mFtpQueueManager.initFtp(mContext, deviceService, ARUTILS_DESTINATION_ENUM.ARUTILS_DESTINATION_DRONE, ARUTILS_FTP_TYPE_ENUM.ARUTILS_FTP_TYPE_GENERIC);
-
-                mSDCardModule = new SDCardModule(mFtpListManager, mFtpQueueManager);
-                mSDCardModule.addListener(mSDCardModuleListener);
             }
+
             catch (ARUtilsException e)
             {
                 Log.e(TAG, "Exception", e);
@@ -216,10 +196,7 @@ public class SkyControllerDrone {
     public void addListener(Listener listener) {
         mListeners.add(listener);
     }
-
-    public void removeListener(Listener listener) {
-        mListeners.remove(listener);
-    }
+    /*public void removeListener(Listener listener) {mListeners.remove(listener);}*/
     //endregion Listener
 
     /**
@@ -297,26 +274,6 @@ public class SkyControllerDrone {
     }
 
 
-
-    /**
-     * Download the last flight medias
-     * Uses the run id to download all medias related to the last flight
-     * If no run id is available, download all medias of the day
-     */
-    public void getLastFlightMedias() {
-        String runId = mCurrentRunId;
-        if ((runId != null) && !runId.isEmpty()) {
-            mSDCardModule.getFlightMedias(runId);
-        } else {
-            Log.e(TAG, "RunID not available, fallback to the day's medias");
-            mSDCardModule.getTodaysFlightMedias();
-        }
-    }
-
-    public void cancelGetLastFlightMedias() {
-        mSDCardModule.cancelGetFlightMedias();
-    }
-
     private ARDiscoveryDevice createDiscoveryDevice(@NonNull ARDiscoveryDeviceService service) {
         ARDiscoveryDevice device = null;
         try {
@@ -325,7 +282,6 @@ public class SkyControllerDrone {
             Log.e(TAG, "Exception", e);
             Log.e(TAG, "Error: " + e.getError());
         }
-
         return device;
     }
 
@@ -400,60 +356,22 @@ public class SkyControllerDrone {
         }
     }
 
-    private void notifyMatchingMediasFound(int nbMedias) {
+    private void notifyAutopilotDisengage() {
         List<Listener> listenersCpy = new ArrayList<>(mListeners);
         for (Listener listener : listenersCpy) {
-            listener.onMatchingMediasFound(nbMedias);
+            listener.onAutoPilotDisengage();
         }
     }
 
-    private void notifyDownloadProgressed(String mediaName, int progress) {
+    private void notifyOnDronePositionChange() {
         List<Listener> listenersCpy = new ArrayList<>(mListeners);
         for (Listener listener : listenersCpy) {
-            listener.onDownloadProgressed(mediaName, progress);
+            listener.onDronePositionChange();
         }
     }
 
-    private void notifyDownloadComplete(String mediaName) {
-        List<Listener> listenersCpy = new ArrayList<>(mListeners);
-        for (Listener listener : listenersCpy) {
-            listener.onDownloadComplete(mediaName);
-        }
-    }
     //endregion notify listener block
 
-    @SuppressWarnings("FieldCanBeLocal")
-    private final SDCardModule.Listener mSDCardModuleListener = new SDCardModule.Listener() {
-        @Override
-        public void onMatchingMediasFound(final int nbMedias) {
-            mHandler.post(new Runnable() {
-                @Override
-                public void run() {
-                    notifyMatchingMediasFound(nbMedias);
-                }
-            });
-        }
-
-        @Override
-        public void onDownloadProgressed(final String mediaName, final int progress) {
-            mHandler.post(new Runnable() {
-                @Override
-                public void run() {
-                    notifyDownloadProgressed(mediaName, progress);
-                }
-            });
-        }
-
-        @Override
-        public void onDownloadComplete(final String mediaName) {
-            mHandler.post(new Runnable() {
-                @Override
-                public void run() {
-                    notifyDownloadComplete(mediaName);
-                }
-            });
-        }
-    };
 
     private final ARDeviceControllerListener mDeviceControllerListener = new ARDeviceControllerListener() {
 
@@ -473,8 +391,6 @@ public class SkyControllerDrone {
             mDroneState = newState;
             if (ARCONTROLLER_DEVICE_STATE_ENUM.ARCONTROLLER_DEVICE_STATE_RUNNING.equals(mDroneState)) {
                 mDeviceController.getFeatureARDrone3().sendMediaStreamingVideoEnable((byte) 1);
-            } else if (ARCONTROLLER_DEVICE_STATE_ENUM.ARCONTROLLER_DEVICE_STATE_STOPPED.equals(mDroneState)) {
-                mSDCardModule.cancelGetFlightMedias();
             }
             mHandler.post(new Runnable() {
                 @Override
@@ -484,30 +400,26 @@ public class SkyControllerDrone {
             });
         }
 
+
         @Override
         public void onCommandReceived(ARDeviceController deviceController, ARCONTROLLER_DICTIONARY_KEY_ENUM commandKey, ARControllerDictionary elementDictionary) {
-/*
-            if ((commandKey == ARCONTROLLER_DICTIONARY_KEY_ENUM.ARCONTROLLER_DICTIONARY_KEY_SKYCONTROLLER_SKYCONTROLLERSTATE_ATTITUDECHANGED) && (elementDictionary != null)){
+
+            // If axis is grabed (i.e when the autopilot is engage) then disengage autopilot
+            if ((commandKey == ARCONTROLLER_DICTIONARY_KEY_ENUM.ARCONTROLLER_DICTIONARY_KEY_MAPPER_GRABAXISEVENT) && (elementDictionary != null)){
                 ARControllerArgumentDictionary<Object> args = elementDictionary.get(ARControllerDictionary.ARCONTROLLER_DICTIONARY_SINGLE_KEY);
                 if (args != null) {
-                    final float q0 = (float)((Double)args.get(ARFeatureSkyController.ARCONTROLLER_DICTIONARY_KEY_SKYCONTROLLER_SKYCONTROLLERSTATE_ATTITUDECHANGED_Q0)).doubleValue();
-                    final float q1 = (float)((Double)args.get(ARFeatureSkyController.ARCONTROLLER_DICTIONARY_KEY_SKYCONTROLLER_SKYCONTROLLERSTATE_ATTITUDECHANGED_Q1)).doubleValue();
-                    final float q2 = (float)((Double)args.get(ARFeatureSkyController.ARCONTROLLER_DICTIONARY_KEY_SKYCONTROLLER_SKYCONTROLLERSTATE_ATTITUDECHANGED_Q2)).doubleValue();
-                    final float q3 = (float)((Double)args.get(ARFeatureSkyController.ARCONTROLLER_DICTIONARY_KEY_SKYCONTROLLER_SKYCONTROLLERSTATE_ATTITUDECHANGED_Q3)).doubleValue();
-
+                    mAutoPilotModule.disengage();
                     mHandler.post(new Runnable() {
                         @Override
                         public void run() {
-                            DroneApplication.getApplication().getConsoleMessage().pushMessage("AC "+q0+", "+q1+", "+q2+", "+q3);
-                            Log.e("MAMAN", "Skycontroller Attitude changed");
+                            notifyAutopilotDisengage();
                         }
                     });
                 }
             }
-*/
 
             // if event received is the battery update
-            if ((commandKey == ARCONTROLLER_DICTIONARY_KEY_ENUM.ARCONTROLLER_DICTIONARY_KEY_COMMON_COMMONSTATE_BATTERYSTATECHANGED) && (elementDictionary != null)) {
+            else if ((commandKey == ARCONTROLLER_DICTIONARY_KEY_ENUM.ARCONTROLLER_DICTIONARY_KEY_COMMON_COMMONSTATE_BATTERYSTATECHANGED) && (elementDictionary != null)) {
                 ARControllerArgumentDictionary<Object> args = elementDictionary.get(ARControllerDictionary.ARCONTROLLER_DICTIONARY_SINGLE_KEY);
                 if (args != null) {
                     final int battery = (Integer) args.get(ARFeatureCommon.ARCONTROLLER_DICTIONARY_KEY_COMMON_COMMONSTATE_BATTERYSTATECHANGED_PERCENT);
@@ -560,19 +472,7 @@ public class SkyControllerDrone {
                     });
                 }
             }
-            // if event received is the run id
-            else if ((commandKey == ARCONTROLLER_DICTIONARY_KEY_ENUM.ARCONTROLLER_DICTIONARY_KEY_COMMON_RUNSTATE_RUNIDCHANGED) && (elementDictionary != null)){
-                ARControllerArgumentDictionary<Object> args = elementDictionary.get(ARControllerDictionary.ARCONTROLLER_DICTIONARY_SINGLE_KEY);
-                if (args != null) {
-                    final String runID = (String) args.get(ARFeatureCommon.ARCONTROLLER_DICTIONARY_KEY_COMMON_RUNSTATE_RUNIDCHANGED_RUNID);
-                    mHandler.post(new Runnable() {
-                        @Override
-                        public void run() {
-                            mCurrentRunId = runID;
-                        }
-                    });
-                }
-            }
+
             // If the event received is the Autonomous flight availability changed
             else if ((commandKey == ARCONTROLLER_DICTIONARY_KEY_ENUM.ARCONTROLLER_DICTIONARY_KEY_COMMON_FLIGHTPLANSTATE_AVAILABILITYSTATECHANGED) && (elementDictionary != null)){
                 ARControllerArgumentDictionary<Object> args = elementDictionary.get(ARControllerDictionary.ARCONTROLLER_DICTIONARY_SINGLE_KEY);
@@ -587,7 +487,6 @@ public class SkyControllerDrone {
                 if (args != null) {
                     ARCOMMANDS_COMMON_MAVLINKSTATE_MAVLINKPLAYERRORSTATECHANGED_ERROR_ENUM error =
                             ARCOMMANDS_COMMON_MAVLINKSTATE_MAVLINKPLAYERRORSTATECHANGED_ERROR_ENUM.getFromValue((Integer)args.get(ARFeatureCommon.ARCONTROLLER_DICTIONARY_KEY_COMMON_MAVLINKSTATE_MAVLINKPLAYERRORSTATECHANGED_ERROR));
-                    //VideoFragment.pushInConsole(error.toString());
                 }
             }
 
@@ -595,18 +494,22 @@ public class SkyControllerDrone {
             else if ((commandKey == ARCONTROLLER_DICTIONARY_KEY_ENUM.ARCONTROLLER_DICTIONARY_KEY_ARDRONE3_PILOTINGSTATE_ATTITUDECHANGED) && (elementDictionary != null)){
                 ARControllerArgumentDictionary<Object> args = elementDictionary.get(ARControllerDictionary.ARCONTROLLER_DICTIONARY_SINGLE_KEY);
                 if (args != null) {
-                    float roll = (float)((Double)args.get(ARFeatureARDrone3.ARCONTROLLER_DICTIONARY_KEY_ARDRONE3_PILOTINGSTATE_ATTITUDECHANGED_ROLL)).doubleValue();
-                    float pitch = (float)((Double)args.get(ARFeatureARDrone3.ARCONTROLLER_DICTIONARY_KEY_ARDRONE3_PILOTINGSTATE_ATTITUDECHANGED_PITCH)).doubleValue();
-                    float yaw = (float)((Double)args.get(ARFeatureARDrone3.ARCONTROLLER_DICTIONARY_KEY_ARDRONE3_PILOTINGSTATE_ATTITUDECHANGED_YAW)).doubleValue();
-
+                    final float roll = (float)((Double)args.get(ARFeatureARDrone3.ARCONTROLLER_DICTIONARY_KEY_ARDRONE3_PILOTINGSTATE_ATTITUDECHANGED_ROLL)).doubleValue();
+                    final float pitch = (float)((Double)args.get(ARFeatureARDrone3.ARCONTROLLER_DICTIONARY_KEY_ARDRONE3_PILOTINGSTATE_ATTITUDECHANGED_PITCH)).doubleValue();
+                    final float yaw = (float)((Double)args.get(ARFeatureARDrone3.ARCONTROLLER_DICTIONARY_KEY_ARDRONE3_PILOTINGSTATE_ATTITUDECHANGED_YAW)).doubleValue();
                     mAutoPilotModule.updateDroneSettings(roll, pitch, yaw);
+                    mHandler.post(new Runnable() {
+                        @Override
+                        public void run() {
+                            notifyOnDronePositionChange();
+                        }
+                    });
                 }
             }
 
             // Camera info Triggered at connection:
             else if ((commandKey == ARCONTROLLER_DICTIONARY_KEY_ENUM.ARCONTROLLER_DICTIONARY_KEY_COMMON_CAMERASETTINGSSTATE_CAMERASETTINGSCHANGED) && (elementDictionary != null)){
                 ARControllerArgumentDictionary<Object> args = elementDictionary.get(ARControllerDictionary.ARCONTROLLER_DICTIONARY_SINGLE_KEY);
-                Log.e("MAMAN", "INIT CAM");
                 if (args != null) {
                     float fov = (float)((Double)args.get(ARFeatureCommon.ARCONTROLLER_DICTIONARY_KEY_COMMON_CAMERASETTINGSSTATE_CAMERASETTINGSCHANGED_FOV)).doubleValue();
                     float panMax = (float)((Double)args.get(ARFeatureCommon.ARCONTROLLER_DICTIONARY_KEY_COMMON_CAMERASETTINGSSTATE_CAMERASETTINGSCHANGED_PANMAX)).doubleValue();
@@ -621,11 +524,26 @@ public class SkyControllerDrone {
             //Current Camera orientation:
             else if ((commandKey == ARCONTROLLER_DICTIONARY_KEY_ENUM.ARCONTROLLER_DICTIONARY_KEY_ARDRONE3_CAMERASTATE_ORIENTATIONV2) && (elementDictionary != null)){
                 ARControllerArgumentDictionary<Object> args = elementDictionary.get(ARControllerDictionary.ARCONTROLLER_DICTIONARY_SINGLE_KEY);
-                Log.e("MAMAN", "UPDATE CAM");
                 if (args != null) {
                     float tilt = (float)((Double)args.get(ARFeatureARDrone3.ARCONTROLLER_DICTIONARY_KEY_ARDRONE3_CAMERASTATE_ORIENTATIONV2_TILT)).doubleValue();
                     float pan = (float)((Double)args.get(ARFeatureARDrone3.ARCONTROLLER_DICTIONARY_KEY_ARDRONE3_CAMERASTATE_ORIENTATIONV2_PAN)).doubleValue();
                     mAutoPilotModule.setCameraSettings(tilt, pan);
+                }
+            }
+
+            else if ((commandKey == ARCONTROLLER_DICTIONARY_KEY_ENUM.ARCONTROLLER_DICTIONARY_KEY_ARDRONE3_PILOTINGSTATE_POSITIONCHANGED) && (elementDictionary != null)){
+                ARControllerArgumentDictionary<Object> args = elementDictionary.get(ARControllerDictionary.ARCONTROLLER_DICTIONARY_SINGLE_KEY);
+                if (args != null) {
+                    final double latitude = (double)args.get(ARFeatureARDrone3.ARCONTROLLER_DICTIONARY_KEY_ARDRONE3_PILOTINGSTATE_POSITIONCHANGED_LATITUDE);
+                    final double longitude = (double)args.get(ARFeatureARDrone3.ARCONTROLLER_DICTIONARY_KEY_ARDRONE3_PILOTINGSTATE_POSITIONCHANGED_LONGITUDE);
+                    final double altitude = (double)args.get(ARFeatureARDrone3.ARCONTROLLER_DICTIONARY_KEY_ARDRONE3_PILOTINGSTATE_POSITIONCHANGED_ALTITUDE);
+                    mAutoPilotModule.updateDroneSettings(latitude, longitude, altitude);
+                    mHandler.post(new Runnable() {
+                        @Override
+                        public void run() {
+                            notifyOnDronePositionChange();
+                        }
+                    });
                 }
             }
 

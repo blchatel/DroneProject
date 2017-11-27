@@ -41,9 +41,9 @@ public class SkyControllerActivity extends AppCompatActivity {
     private VideoFragment mVideoFragment;
     private MapsFragment mMapFragment;
 
-    private Button mDownloadBt;
-    private int mNbMaxDownload;
-    private int mCurrentDownloadIndex;
+
+    private Button mAutoPilotBt;
+
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -58,7 +58,6 @@ public class SkyControllerActivity extends AppCompatActivity {
         // Init the Device service and the SkyControllerDrone. Make this activity listen the SkyControllerDrone instance
         Intent intent = getIntent();
         ARDiscoveryDeviceService service = intent.getParcelableExtra(DeviceListActivity.EXTRA_DEVICE_SERVICE);
-//        mSkyControllerDrone = new SkyControllerDrone(this);
         mSkyControllerDrone = new SkyControllerDrone(this, service);
         mSkyControllerDrone.addListener(mSkyControllerListener);
     }
@@ -69,7 +68,6 @@ public class SkyControllerActivity extends AppCompatActivity {
         Log.d("CYCLE", "Start");
 
         // show a loading view while the bebop drone is connecting
-        //if (false && (mSkyControllerDrone != null) &&
         if ((mSkyControllerDrone != null) &&
                 !(ARCONTROLLER_DEVICE_STATE_ENUM.ARCONTROLLER_DEVICE_STATE_RUNNING.equals(mSkyControllerDrone.getSkyControllerConnectionState()))){
 
@@ -99,11 +97,11 @@ public class SkyControllerActivity extends AppCompatActivity {
 
     @Override
     protected void onPause() {
+        Log.d("CYCLE", "Pause");
         // i.e. home button we want to disconnect
         if (!this.isFinishing()){
             this.onBackPressed();
         }
-        Log.d("CYCLE", "Pause");
         super.onPause();
     }
 
@@ -127,12 +125,12 @@ public class SkyControllerActivity extends AppCompatActivity {
     private void initIHM() {
 
         // Init the pager with the two fragment adapter
-        final ViewPager viewPager = (ViewPager) findViewById(R.id.pager);
+        final ViewPager viewPager = findViewById(R.id.pager);
         viewPager.setAdapter(new PagerAdapter(viewPager, getSupportFragmentManager()));
 
         // Init the progress tool
-        progressBar = (ProgressBar) findViewById(R.id.progressBar);
-        progressText = (TextView) findViewById(R.id.progressText);
+        progressBar =  findViewById(R.id.progressBar);
+        progressText =  findViewById(R.id.progressText);
 
         // init the emergency button
         findViewById(R.id.emergencyBt).setOnClickListener(new View.OnClickListener() {
@@ -142,31 +140,22 @@ public class SkyControllerActivity extends AppCompatActivity {
         });
 
         // init the emergency button
-        final Button autopilot = (Button) findViewById(R.id.autopilot);
-        autopilot.setOnClickListener(new View.OnClickListener() {
+        mAutoPilotBt = findViewById(R.id.autopilot);
+        mAutoPilotBt.setOnClickListener(new View.OnClickListener() {
             public void onClick(View v) {
                 if(mSkyControllerDrone.autoPilotModule().isEngaged()){
                     // disengage
                     mSkyControllerDrone.autoPilotModule().disengage();
-                    autopilot.setTextColor(Color.RED);
-                    autopilot.setText(R.string.engageap);
-                    autopilot.setBackgroundResource(R.drawable.emergency_btn);
+                    mAutoPilotBt.setTextColor(Color.RED);
+                    mAutoPilotBt.setText(R.string.engageap);
+                    mAutoPilotBt.setBackgroundResource(R.drawable.emergency_btn);
                 }else{
                     // engage
                     mSkyControllerDrone.autoPilotModule().engage();
-                    autopilot.setTextColor(Color.GREEN);
-                    autopilot.setText(R.string.disengageap);
-                    autopilot.setBackgroundResource(R.drawable.green_btn);
+                    mAutoPilotBt.setTextColor(Color.GREEN);
+                    mAutoPilotBt.setText(R.string.disengageap);
+                    mAutoPilotBt.setBackgroundResource(R.drawable.green_btn);
                 }
-            }
-        });
-
-        // inti the download button
-        mDownloadBt = (Button)findViewById(R.id.downloadBt);
-        mDownloadBt.setEnabled(false);
-        mDownloadBt.setOnClickListener(new View.OnClickListener() {
-            public void onClick(View v) {
-                showProgressBar(getResources().getString(R.string.fetch));
             }
         });
 
@@ -369,14 +358,12 @@ public class SkyControllerActivity extends AppCompatActivity {
 
             switch (state) {
                 case ARCOMMANDS_ARDRONE3_PILOTINGSTATE_FLYINGSTATECHANGED_STATE_LANDED:
-                    mDownloadBt.setEnabled(true);
                     break;
                 case ARCOMMANDS_ARDRONE3_PILOTINGSTATE_FLYINGSTATECHANGED_STATE_FLYING:
                 case ARCOMMANDS_ARDRONE3_PILOTINGSTATE_FLYINGSTATECHANGED_STATE_HOVERING:
-                    mDownloadBt.setEnabled(false);
                     break;
                 default:
-                    mDownloadBt.setEnabled(false);
+                    break;
             }
         }
 
@@ -396,30 +383,16 @@ public class SkyControllerActivity extends AppCompatActivity {
         }
 
         @Override
-        public void onMatchingMediasFound(int nbMedias) {
-
-            hideProgressBar();
-
-            mNbMaxDownload = nbMedias;
-            mCurrentDownloadIndex = 1;
-
-            if (nbMedias > 0) {
-                showProgressBar(getResources().getString(R.string.downloadMedia));
-            }
+        public void onAutoPilotDisengage() {
+            DroneApplication.getApplication().getConsoleMessage().pushMessage("Disengage AP");
+            mAutoPilotBt.setTextColor(Color.RED);
+            mAutoPilotBt.setText(R.string.engageap);
+            mAutoPilotBt.setBackgroundResource(R.drawable.emergency_btn);
         }
 
         @Override
-        public void onDownloadProgressed(String mediaName, int progress) {
-        }
-
-        @Override
-        public void onDownloadComplete(String mediaName) {
-            mCurrentDownloadIndex++;
-
-            if (mCurrentDownloadIndex > mNbMaxDownload) {
-                hideProgressBar();
-            }
+        public void onDronePositionChange() {
+            mMapFragment.drawDrone();
         }
     };
-
 }

@@ -35,16 +35,17 @@ import java.util.Calendar;
 import ch.epfl.droneproject.DroneApplication;
 import ch.epfl.droneproject.R;
 
-/**
- *
- */
 public class FlightPlanerModule {
 
     private int mLastPassedFix;
+
     /**
      * The drone position which is by definition the -1 element of fixList
      */
     private Fix mCurrentDronePosition;
+
+    private Fix mCurrentOperatorPosition;
+
     /**
      * A flight plan has a list of fixes
      */
@@ -55,6 +56,7 @@ public class FlightPlanerModule {
      */
     private MavLinkFlightPlanUtilities mavlink;
 
+
     /**
      * Default Flight planner Constructor
      * set the drone to default position and init the mavlink flight plan utilities
@@ -64,6 +66,7 @@ public class FlightPlanerModule {
         this.mLastPassedFix = 0;
         this.mavlink = new MavLinkFlightPlanUtilities(this);
     }
+
 
     /**
      * Getter for the mavlink utilities. Allow to call utilities function from outside
@@ -117,12 +120,11 @@ public class FlightPlanerModule {
      * @param lon (double): new longitude [degree]
      */
     public void setFixPosition(int index, double lat, double lon){
-        if(index == -1){
-            mCurrentDronePosition = new Fix(mCurrentDronePosition.title, lat, lon, mCurrentDronePosition.alt, mCurrentDronePosition.yaw);
-        }else {
-            Fix fix = fixList.get(index);
-            fixList.set(index, new Fix(fix.title, lat, lon, fix.alt, fix.yaw));
-        }
+        if(index == -1)
+            return;
+
+        Fix fix = fixList.get(index);
+        fixList.set(index, new Fix(fix.title, lat, lon, fix.alt, fix.yaw));
     }
 
     /**
@@ -135,14 +137,30 @@ public class FlightPlanerModule {
      * @param yaw (double): new yaw angle [degree]
      */
     public void setFix(int index, String title, double lat, double lon, double alt, double yaw){
-
-        if(index == -1){
-            mCurrentDronePosition = new Fix(title, lat, lon, alt, yaw);
-        }else {
+        if(index > -1)
             fixList.set(index, new Fix(title, lat, lon, alt, yaw));
-        }
     }
 
+    /**
+     * Update Current drone position
+     * @param lat (double): new latitude [degree]
+     * @param lon (double): new longitude [degree]
+     * @param alt (double): new altitude [m]
+     */
+    public void updateDronePosition(double lat, double lon, double alt){
+        mCurrentDronePosition.lat = lat;
+        mCurrentDronePosition.lon = lon;
+        mCurrentDronePosition.alt = alt;
+    }
+
+
+    /**
+     * Update Current drone orientation
+     * @param yaw (double): new yaw angle [degree]
+     */
+    public void updateDroneOrientation(double yaw){
+        mCurrentDronePosition.yaw = yaw;
+    }
 
     /**
      * Get the title of a given index fix
@@ -199,7 +217,6 @@ public class FlightPlanerModule {
         Bitmap icon = BitmapFactory.decodeResource(DroneApplication.getApplication().getContext().getResources(), R.drawable.drone30);
         Bitmap rotatedIcon =  Bitmap.createBitmap(icon, 0, 0, icon.getWidth(), icon.getHeight(), matrix, true);
 
-
         return new MarkerOptions()
                 .position(mCurrentDronePosition.getPosition())
                 .draggable(false)
@@ -240,15 +257,14 @@ public class FlightPlanerModule {
         private static final double DEFAULT_ALTITUDE = 5;
         private static final double DEFAULT_YAW = 0;
 
-        private String title;
-        private double lat;
-        private double lon;
-        private double alt;
-        private double yaw;
+        String title;
+        double lat;
+        double lon;
+        double alt;
+        double yaw;
 
         //private boolean isTakeOff;
         //private boolean isLanding;
-
 
         public Fix(String title, double lat, double lon, double alt, double yaw) {
             this.title = title;

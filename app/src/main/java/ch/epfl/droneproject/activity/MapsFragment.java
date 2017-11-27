@@ -29,6 +29,7 @@ import com.google.android.gms.maps.model.PolylineOptions;
 
 import java.util.ArrayList;
 
+import ch.epfl.droneproject.DroneApplication;
 import ch.epfl.droneproject.R;
 import ch.epfl.droneproject.module.FlightPlanerModule;
 
@@ -74,6 +75,7 @@ public class MapsFragment extends Fragment implements OnMapReadyCallback {
      */
     private FlightPlanerModule mFPLM;
 
+    private  Marker mDroneMarker;
 
     /**
      * Initialize the Fragment as a constructor should.
@@ -101,6 +103,7 @@ public class MapsFragment extends Fragment implements OnMapReadyCallback {
         SupportMapFragment mapFragment = (SupportMapFragment) getChildFragmentManager().findFragmentById(R.id.map);
         mapFragment.getMapAsync(this);
 
+
         final ListView listview = mView.findViewById(R.id.flightplanList);
         listview.setOnItemClickListener(new AdapterView.OnItemClickListener() {
             @Override
@@ -124,7 +127,7 @@ public class MapsFragment extends Fragment implements OnMapReadyCallback {
                 mMap.clear();
                 mFPLM.cleanFix();
                 hideMarkerDetails();
-                drawDrone();
+                createDrone();
             }
         });
 
@@ -189,6 +192,12 @@ public class MapsFragment extends Fragment implements OnMapReadyCallback {
     @Override
     public void onMapReady(GoogleMap googleMap) {
         mMap = googleMap;
+
+        // Add a marker in Sydney, Australia, and move the camera. For debug purpose
+        //LatLng sydney = new LatLng(-34, 151);
+        //mMap.addMarker(new MarkerOptions().position(sydney).title("Marker in Sydney"));
+        //mMap.moveCamera(CameraUpdateFactory.newLatLng(sydney));
+
         mMap.setMapType(GoogleMap.MAP_TYPE_HYBRID);
         if (ActivityCompat.checkSelfPermission(mView.getContext(), Manifest.permission.ACCESS_FINE_LOCATION) == PackageManager.PERMISSION_GRANTED
                 || ActivityCompat.checkSelfPermission(mView.getContext(), Manifest.permission.ACCESS_COARSE_LOCATION) == PackageManager.PERMISSION_GRANTED) {
@@ -237,7 +246,7 @@ public class MapsFragment extends Fragment implements OnMapReadyCallback {
         });
 
         //drawFlightPlan();
-        drawDrone();
+        createDrone();
     }
 
     /**
@@ -270,16 +279,22 @@ public class MapsFragment extends Fragment implements OnMapReadyCallback {
             }
         }
 
-        drawDrone();
+        createDrone();
 
     }
 
-    private void drawDrone(){
-        if(DRAW_DRONE){
-            Marker m = mMap.addMarker(mFPLM.getCurrentDronePosition());
-            m.setTag(-1);
+    private void createDrone(){
+        mDroneMarker = mMap.addMarker(mFPLM.getCurrentDronePosition());
+        mDroneMarker.setTag(-1);
+    }
+
+    public void drawDrone(){
+        if(DRAW_DRONE && mDroneMarker != null){
+            // TODO
+            //mDroneMarker.setPosition(mFPLM.getCurrentDronePosition().getPosition());
         }
     }
+
 
     /**
      * Hide the Marker Details Panel with its current data
