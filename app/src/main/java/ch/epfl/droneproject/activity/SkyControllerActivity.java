@@ -48,6 +48,8 @@ public class SkyControllerActivity extends AppCompatActivity {
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
+        Log.d("CYCLE", "Create");
+
         setContentView(R.layout.activity_sky_controller);
 
         // Init the Interface (button, etc...)
@@ -64,6 +66,7 @@ public class SkyControllerActivity extends AppCompatActivity {
     @Override
     protected void onStart() {
         super.onStart();
+        Log.d("CYCLE", "Start");
 
         // show a loading view while the bebop drone is connecting
         //if (false && (mSkyControllerDrone != null) &&
@@ -95,7 +98,24 @@ public class SkyControllerActivity extends AppCompatActivity {
     }
 
     @Override
+    protected void onPause() {
+        // i.e. home button we want to disconnect
+        if (!this.isFinishing()){
+            this.onBackPressed();
+        }
+        Log.d("CYCLE", "Pause");
+        super.onPause();
+    }
+
+    @Override
+    protected void onStop() {
+        Log.d("CYCLE", "Stop");
+        super.onStop();
+    }
+
+    @Override
     public void onDestroy(){
+        Log.d("CYCLE", "Destroy");
         mSkyControllerDrone.dispose();
         super.onDestroy();
     }
