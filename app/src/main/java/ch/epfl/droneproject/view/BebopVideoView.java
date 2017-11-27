@@ -20,7 +20,7 @@ import java.util.concurrent.locks.ReentrantLock;
 
 public class BebopVideoView extends TextureView implements TextureView.SurfaceTextureListener {
 
-    private static final String TAG = BebopVideoView.class.getSimpleName();
+    private static final String TAG = "BebopVideoView";
 
     private static final String VIDEO_MIME_TYPE = "video/avc";
     private static final int VIDEO_DEQUEUE_TIMEOUT = 33000;
@@ -48,8 +48,6 @@ public class BebopVideoView extends TextureView implements TextureView.SurfaceTe
         super(context, attrs, defStyleAttr);
         mReadyLock = new ReentrantLock();
         setSurfaceTextureListener(this);
-        Log.e("MAMAN", "BEBOP CONSTRUCT");
-
     }
 
     public void displayFrame(ARFrame frame) {
@@ -69,10 +67,12 @@ public class BebopVideoView extends TextureView implements TextureView.SurfaceTe
             } catch (IllegalStateException e) {
                 Log.e(TAG, "Error while dequeue input buffer");
             }
+
             if (index >= 0) {
                 ByteBuffer b = mMediaCodec.getInputBuffer(index);
 
                 if (b != null) {
+
                     b.put(frame.getByteData(), 0, frame.getDataSize());
                 }
                 try {
@@ -101,14 +101,10 @@ public class BebopVideoView extends TextureView implements TextureView.SurfaceTe
 
     public void configureDecoder(ARControllerCodec codec) {
         mReadyLock.lock();
-
         if (codec.getType() == ARCONTROLLER_STREAM_CODEC_TYPE_ENUM.ARCONTROLLER_STREAM_CODEC_TYPE_H264) {
             ARControllerCodec.H264 codecH264 = codec.getAsH264();
             mSpsBuffer = ByteBuffer.wrap(codecH264.getSps().getByteData());
             mPpsBuffer = ByteBuffer.wrap(codecH264.getPps().getByteData());
-        }
-        if (mSpsBuffer != null) {
-            configureMediaCodec();
         }
         mReadyLock.unlock();
     }
@@ -128,6 +124,7 @@ public class BebopVideoView extends TextureView implements TextureView.SurfaceTe
             mMediaCodec.start();
 
             mIsCodecConfigured = true;
+
         } catch (Exception e) {
             Log.e(TAG, "configureMediaCodec", e);
         }
@@ -138,6 +135,7 @@ public class BebopVideoView extends TextureView implements TextureView.SurfaceTe
     public void onSurfaceTextureAvailable(SurfaceTexture surface, int width, int height) {
         this.mSurface = new Surface(surface);
         mIsSurfaceCreated = true;
+        mIsCodecConfigured = false;
         setAlpha(1.0f);
     }
 
@@ -158,6 +156,7 @@ public class BebopVideoView extends TextureView implements TextureView.SurfaceTe
 
         if (surface != null) surface.release();
         if (this.mSurface != null) this.mSurface.release();
+        mIsSurfaceCreated = false;
 
         return true;
     }

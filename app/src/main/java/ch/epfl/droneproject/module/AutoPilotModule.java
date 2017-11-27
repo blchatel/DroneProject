@@ -11,7 +11,6 @@ import com.parrot.arsdk.arcommands.ARCOMMANDS_SKYCONTROLLER_COPILOTING_SETPILOTI
 
 import org.bytedeco.javacpp.Loader;
 import org.bytedeco.javacpp.indexer.UByteBufferIndexer;
-import org.bytedeco.javacpp.indexer.UByteRawIndexer;
 
 import static org.bytedeco.javacpp.opencv_core.*;
 import static org.bytedeco.javacpp.opencv_imgproc.*;
@@ -108,7 +107,6 @@ public class AutoPilotModule {
     }
 
     public boolean autoTakeOffProcedure(){
-
         return false;
     }
 
@@ -380,6 +378,8 @@ public class AutoPilotModule {
 
         private void init(int height, int width){
 
+            Log.e(TAG, "Init("+height+", "+width+")");
+
             rows = height;
             cols = width;
 
@@ -485,7 +485,7 @@ public class AutoPilotModule {
 
             for(int i = 0; i < recW; i++){
                 for(int j = 0; j < recH; j++){
-                    Log.d(TAG, i+", "+j+", "+idx.get(i, j, 0)+", "+idx.get(i, j, 1)+", "+idx.get(i, j, 2));
+                    //Log.d(TAG, i+", "+j+", "+idx.get(i, j, 0)+", "+idx.get(i, j, 1)+", "+idx.get(i, j, 2));
                     H += idx.get(i, j, 0);
                     S += idx.get(i, j, 1);
                     V += idx.get(i, j, 2);
@@ -502,9 +502,7 @@ public class AutoPilotModule {
             blobCenter.x(x);
             blobCenter.y(y);
             mIsColorSelected = true;
-
         }
-
 
         @Override
         public void run() {
@@ -534,7 +532,7 @@ public class AutoPilotModule {
 
                 if (source != null) {
                     // Get the input frame
-                    source.copyPixelsToBuffer(grabbedImage.getByteBuffer());
+                    source.copyPixelsToBuffer(grabbedImage.createBuffer());
 
                     // If a color is selected (i.e. the user has click on the screen once)
                     // Then:
@@ -616,7 +614,6 @@ public class AutoPilotModule {
                         }
                     }
                 }
-                // TODO be sure of this synchronized call see in the draw of opencvview if correct
                 synchronized (lock) {
                     runOnUiThread(new Runnable() {
                         @Override
@@ -639,7 +636,6 @@ public class AutoPilotModule {
             cvReleaseImage(grabbedImage);
         }
 
-        
         private void runOnUiThread(Runnable r) {
             handler.post(r);
         }
