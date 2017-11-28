@@ -23,13 +23,13 @@ import ch.epfl.droneproject.view.BebopVideoView;
 import ch.epfl.droneproject.view.OpenCVView;
 
 
-
 public class AutoPilotModule {
 
     private static final String TAG = "AutoPilot";
 
     // Is the Autopilot engaged
     private boolean isEngaged;
+    private boolean isInFlightPlan;
 
     // Controller extension module
     private SkyControllerExtensionModule mSKEModule;
@@ -37,9 +37,9 @@ public class AutoPilotModule {
     private FlightPlanerModule mFlightPlanerModule;
 
     // Drone current states
-    private DroneStatesAndSettings droneSettings;
+    private DroneStatesSettingsProceduresModule droneSettings;
     // Camera current states
-    private CameraStatesAndSettings cameraSettings;
+
 
     // The opencv thread
     private OpenCVThread openCVThread;
@@ -49,12 +49,13 @@ public class AutoPilotModule {
 
         //this.isEngaged = true;
         this.isEngaged = false;
+        this.isInFlightPlan = false;
 
         this.mSKEModule = skeModule;
         this.mFlightPlanerModule = new FlightPlanerModule();
 
-        this.droneSettings = new DroneStatesAndSettings();
-        this.cameraSettings = new CameraStatesAndSettings();
+        this.droneSettings = new DroneStatesSettingsProceduresModule(skeModule);
+
         this.openCVThread = null;
     }
 
@@ -65,61 +66,66 @@ public class AutoPilotModule {
     public void engage(){
         this.isEngaged = true;
         mSKEModule.setController(ARCOMMANDS_SKYCONTROLLER_COPILOTING_SETPILOTINGSOURCE_SOURCE_ENUM.ARCOMMANDS_SKYCONTROLLER_COPILOTING_SETPILOTINGSOURCE_SOURCE_CONTROLLER);
-
         int b1 = 1;
         b1 = b1 | (1 << 1);
         b1 = b1 | (1 << 2);
         b1 = b1 | (1 << 3);
         mSKEModule.grabAxis(0, b1);
+        if(this.isInFlightPlan){
+            startAutoFlightPlan();
+        }
     }
 
     public void disengage(){
         this.isEngaged = false;
         mSKEModule.setController(ARCOMMANDS_SKYCONTROLLER_COPILOTING_SETPILOTINGSOURCE_SOURCE_ENUM.ARCOMMANDS_SKYCONTROLLER_COPILOTING_SETPILOTINGSOURCE_SOURCE_SKYCONTROLLER);
         mSKEModule.grabAxis(0, 0);
+        if(this.isInFlightPlan){
+            pauseAutoFlightPlan();
+        }
+    }
+
+    public void startMission(){
+        if(this.isEngaged) {
+            this.droneSettings.startMission();
+        }
+    }
+
+    public DroneStatesSettingsProceduresModule getDroneSettings() {
+        return droneSettings;
     }
 
     public FlightPlanerModule getFlightPlanerModule() {
         return mFlightPlanerModule;
     }
     public void startAutoFlightPlan(){
-        if(this.isEngaged)
+        if(this.isEngaged) {
+            this.isInFlightPlan = true;
             this.mSKEModule.startFlightPlan(mFlightPlanerModule);
+        }
     }
     public void pauseAutoFlightPlan(){  this.mSKEModule.pauseFlightPlan();}
-    public void stopAutoFlightPlan(){  this.mSKEModule.stopFlightPlan();}
+    public void stopAutoFlightPlan(){
+        this.isInFlightPlan = false;
+        this.mSKEModule.stopFlightPlan();
+    }
 
     public void setCameraInfo(final float fov, final float panMin, final float panMax, final float tiltMin, final float tiltMax){
-        cameraSettings.set(fov, panMin, panMax, tiltMin, tiltMax);
+        droneSettings.setCameraSettings(fov, panMin, panMax, tiltMin, tiltMax);
     }
 
     public void setCameraSettings(float tilt, float pan){
-        cameraSettings.set(tilt, pan);
+        droneSettings.setCameraSettings(tilt, pan);
     }
 
     public void updateDroneSettings(float roll, float pitch, float yaw){
         droneSettings.update(roll, pitch, yaw);
+        mFlightPlanerModule.updateDroneOrientation(yaw);
     }
     public void updateDroneSettings(double lat, double lon, double alt){
         droneSettings.update(lat, lon, alt);
+        mFlightPlanerModule.updateDronePosition(lat, lon, alt);
     }
-
-    /**
-     * Sleep during time, a pausing function
-     * @param time (long): time to sleep in milisecond, i.e 1000 = 1 sec
-     */
-    private void sleep(long time){
-        try {
-            Thread.sleep(time);
-        } catch (InterruptedException e) {
-            e.printStackTrace();
-        }
-    }
-
-    public boolean autoTakeOffProcedure(){
-        return false;
-    }
-
 
     // Threads
     public void resumeThreads(BebopVideoView videoView, OpenCVView cvView) {
@@ -139,113 +145,6 @@ public class AutoPilotModule {
         }
     }
 
-
-    private class DroneStatesAndSettings{
-
-        private float roll, pitch, yaw, gaz;
-        private double lat, lon, alt;
-
-
-        DroneStatesAndSettings(){
-            update(0, 0, 0);
-            this.gaz = 0;
-        }
-
-        void update(float roll, float pitch, float yaw){
-            this.roll = roll;
-            this.pitch = pitch;
-            this.yaw = yaw;
-            mFlightPlanerModule.updateDroneOrientation(yaw);
-        }
-        void update(double lat, double lon, double alt){
-            this.lat = lat;
-            this.lon = lon;
-            this.alt = alt;
-            mFlightPlanerModule.updateDronePosition(lat, lon, alt);
-        }
-
-        void turnRight(){
-            if(isEngaged)
-              mSKEModule.setYaw((byte) 50);
-        }
-        void turnLeft(){
-            if(isEngaged)
-                mSKEModule.setYaw((byte) -50);
-        }
-        void fixYaw(){
-
-            if(isEngaged && this.yaw != 0) {
-                mSKEModule.setYaw((byte) 0);
-            }
-        }
-
-        void climb(){
-            if(isEngaged) {
-                mSKEModule.setGaz((byte) 50);
-                this.gaz = 50;
-            }
-        }
-        void descend(){
-            if(isEngaged) {
-                mSKEModule.setGaz((byte) -50);
-                this.gaz = -50;
-            }
-        }
-        void stabilize(){
-            if(isEngaged && this.gaz != 0) {
-                mSKEModule.setGaz((byte) 0);
-                this.gaz = 0;
-            }
-        }
-
-
-    }
-
-    private class CameraStatesAndSettings {
-
-        private float fov, panMax, panMin, tiltMax, tiltMin;
-        private float tilt, pan;
-
-        CameraStatesAndSettings(){
-            this.fov = 0;
-            this.panMin = 0;
-            this.panMax = 0;
-            this.tiltMin = 0;
-            this.tiltMax = 0;
-            this.tilt = 0;
-            this.pan = 0;
-        }
-
-        void set(final float fov, final float panMin, final float panMax, final float tiltMin, final float tiltMax){
-            this.fov = fov;
-            this.panMin = panMin;
-            this.panMax = panMax;
-            this.tiltMin = tiltMin;
-            this.tiltMax = tiltMax;
-            this.tilt = 0;
-            this.pan = 0;
-        }
-
-        void set(float tilt, float pan){
-            this.tilt = tilt;
-            this.pan = pan;
-        }
-
-        void moveCamera(float deltaTilt, float deltaPan) {
-            if (isEngaged){
-                float newTilt = Math.min(Math.max(tilt + deltaTilt, tiltMin), tiltMax);
-                float newPan = Math.min(Math.max(pan + deltaPan, panMin), panMax);
-                mSKEModule.cameraOrientation(newTilt, newPan);
-            }
-        }
-
-        void moveCameraTiltBy(float deltaTilt){
-            if(isEngaged){
-                float newTilt = Math.min(Math.max(tilt + deltaTilt, tiltMin), tiltMax);
-                mSKEModule.cameraOrientation(newTilt, pan);
-            }
-        }
-    }
 
 
     private class ColorBlobDetector {
@@ -600,35 +499,37 @@ public class AutoPilotModule {
                             y2 = y + h / 2;
                         }
 
-                        double deltaX = mFrameCenter.x() - blobCenter.x();
-                        double deltaY = mFrameCenter.y() - blobCenter.y();
+                        if(isEngaged) {
+                            double deltaX = mFrameCenter.x() - blobCenter.x();
+                            double deltaY = mFrameCenter.y() - blobCenter.y();
 
-                        // apply correction
-                        if (blobArea / mFrameArea < AREA_THRESHOLD) {
-                            Log.e(TAG, "Become Closer");
-                        }
-
-                        if (Math.abs(deltaX) > mDistance) {
-
-                            if (deltaX > 0) {
-                                Log.e(TAG, "Correct x right");
-                                droneSettings.turnRight();
-                                //droneSettings.turnLeft();
-                            } else {
-                                Log.e(TAG, "Correct x left");
-                                droneSettings.turnLeft();
-                                //droneSettings.turnRight();
+                            // apply correction
+                            if (blobArea / mFrameArea < AREA_THRESHOLD) {
+                                Log.e(TAG, "Become Closer");
                             }
-                        } else {
-                            droneSettings.fixYaw();
-                        }
-                        if (Math.abs(deltaY) > mDistance) {
-                            if (deltaY > 0) {
-                                Log.e(TAG, "Correct y DOWN");
-                                cameraSettings.moveCameraTiltBy(5);
+
+                            if (Math.abs(deltaX) > mDistance) {
+
+                                if (deltaX > 0) {
+                                    Log.e(TAG, "Correct x right");
+                                    droneSettings.turnRight();
+                                    //droneSettings.turnLeft();
+                                } else {
+                                    Log.e(TAG, "Correct x left");
+                                    droneSettings.turnLeft();
+                                    //droneSettings.turnRight();
+                                }
                             } else {
-                                Log.e(TAG, "Correct y UP");
-                                cameraSettings.moveCameraTiltBy(-5);
+                                droneSettings.fixYaw();
+                            }
+                            if (Math.abs(deltaY) > mDistance) {
+                                if (deltaY > 0) {
+                                    Log.e(TAG, "Correct y DOWN");
+                                    droneSettings.moveCameraTiltBy(5);
+                                } else {
+                                    Log.e(TAG, "Correct y UP");
+                                    droneSettings.moveCameraTiltBy(-5);
+                                }
                             }
                         }
                     }

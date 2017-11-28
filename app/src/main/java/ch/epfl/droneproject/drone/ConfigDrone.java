@@ -154,18 +154,18 @@ public class ConfigDrone {
 
     public static final ConfigDrone DFAULT_DRONE_CONFIG = new ConfigDrone(
             "Default Config",
-            (float) 4,  //  float maxAlt [m]
-            (float) 5,  //  float maxDistance [m]
+            (float) 5,  //  float maxAlt [m]
+            (float) 10,  //  float maxDistance [m]
             (byte) 1,   //  byte shouldNotFlyOver [1|0]
-            (float) 8,  //  float maxTilt [degree]
-            (float) 8,  //  float maxTiltS [degree/s]
-            (float) 1,//  float maxVS [m/s]
-            (float) 60, //  float maxRS [degree/s]
+            (float) 10,  //  float maxTilt [degree]
+            (float) 10,  //  float maxTiltS [degree/s]
+            (float) 2,//  float maxVS [m/s]
+            (float) 120, //  float maxRS [degree/s]
             (float) 2,  //  float maxAutonomousHS [m/s]
-            (float) 0.5,//  float maxAutonomousVS [m/s]
+            (float) 2,//  float maxAutonomousVS [m/s]
             (float) 1,  //  float maxAutonomousHA [m/s2]
-            (float) 0.5,//  float maxAutonomousVA [m/s2],
-            (float) 60, //  float maxAutonomousRS [degree/s]
+            (float) 1,//  float maxAutonomousVA [m/s2],
+            (float) 120, //  float maxAutonomousRS [degree/s]
             (byte) 0,   //  byte bankedTurn [1|0]
             (byte) 0    //  byte hasHullProtection [1|0]
     );

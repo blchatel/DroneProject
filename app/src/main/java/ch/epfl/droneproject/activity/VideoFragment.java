@@ -71,7 +71,6 @@ public class VideoFragment extends Fragment {
     @Override
     public void onResume(){
         super.onResume();
-        //mCVCView.resume(mVideoView, mAPM);
         mAPM.resumeThreads(mVideoView, mCVCView);
 
     }
@@ -79,7 +78,6 @@ public class VideoFragment extends Fragment {
     @Override
     public void onPause(){
         super.onPause();
-        //mCVCView.pause();
         mAPM.pauseThreads();
     }
 

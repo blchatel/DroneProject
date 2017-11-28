@@ -6,11 +6,12 @@ import com.parrot.arsdk.arcommands.ARCOMMANDS_ARDRONE3_ANIMATIONS_FLIP_DIRECTION
 import com.parrot.arsdk.arcommands.ARCOMMANDS_SKYCONTROLLER_COPILOTING_SETPILOTINGSOURCE_SOURCE_ENUM;
 import com.parrot.arsdk.arcontroller.ARCONTROLLER_DEVICE_STATE_ENUM;
 import com.parrot.arsdk.arcontroller.ARDeviceController;
-import com.parrot.arsdk.ardiscovery.ARDiscoveryDeviceService;
 
 import ch.epfl.droneproject.DroneApplication;
-import ch.epfl.droneproject.activity.VideoFragment;
 import ch.epfl.droneproject.drone.ConfigDrone;
+
+
+
 
 public class SkyControllerExtensionModule {
 
@@ -52,7 +53,7 @@ public class SkyControllerExtensionModule {
 
             mDeviceController.getFeatureARDrone3().sendSpeedSettingsHullProtection(config.getHasHullProtection());
 
-            DroneApplication.getApplication().getConsoleMessage().pushMessage("Config set to "+config.getConfigName());
+            //DroneApplication.getApplication().getConsoleMessage().pushMessage("Config set to "+config.getConfigName());
         }
     }
 
@@ -68,7 +69,7 @@ public class SkyControllerExtensionModule {
                 (mDeviceController.getExtensionState().equals(ARCONTROLLER_DEVICE_STATE_ENUM.ARCONTROLLER_DEVICE_STATE_RUNNING))) {
 
             mDeviceController.getFeatureARDrone3().sendPilotingFlatTrim();
-            DroneApplication.getApplication().getConsoleMessage().pushMessage("Flat trim");
+            //DroneApplication.getApplication().getConsoleMessage().pushMessage("Flat trim");
         }
     }
 
@@ -260,11 +261,9 @@ public class SkyControllerExtensionModule {
      * offsets it managed to do before this new command and the value of error set to interrupted.
      */
     public void moveBy(float dX, float dY, float dZ, float dPsi) {
-        DroneApplication.getApplication().getConsoleMessage().pushMessage(mDeviceController.toString());
+        //DroneApplication.getApplication().getConsoleMessage().pushMessage(mDeviceController.toString());
         if ((mDeviceController != null) &&
                 (mDeviceController.getExtensionState().equals(ARCONTROLLER_DEVICE_STATE_ENUM.ARCONTROLLER_DEVICE_STATE_RUNNING))) {
-
-            DroneApplication.getApplication().getConsoleMessage().pushMessage("Pass the test");
             mDeviceController.getFeatureARDrone3().sendPilotingMoveBy(dX, dY, dZ, dPsi);
         }
     }

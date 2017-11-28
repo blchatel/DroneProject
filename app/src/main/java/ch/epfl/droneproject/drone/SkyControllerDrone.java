@@ -160,6 +160,8 @@ public class SkyControllerDrone {
                 mDeviceController = createDeviceController(discoveryDevice);
                 mSKEModule = new SkyControllerExtensionModule(context, mDeviceController);
                 mAutoPilotModule = new AutoPilotModule(mSKEModule);
+                mDeviceController.addListener(mAutoPilotModule.getDroneSettings());
+
                 discoveryDevice.dispose();
             }
 
@@ -289,7 +291,6 @@ public class SkyControllerDrone {
         ARDeviceController deviceController = null;
         try {
             deviceController = new ARDeviceController(discoveryDevice);
-
             deviceController.addListener(mDeviceControllerListener);
             deviceController.addStreamListener(mStreamListener);
         } catch (ARControllerException e) {

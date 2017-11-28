@@ -208,6 +208,12 @@ public class SkyControllerActivity extends AppCompatActivity {
                 mSkyControllerDrone.autoPilotModule().stopAutoFlightPlan();
             }
         });
+        (findViewById(R.id.startMission)).setOnClickListener(new View.OnClickListener() {
+            public void onClick(View v) {
+                mSkyControllerDrone.autoPilotModule().startMission();
+
+            }
+        });
         (findViewById(R.id.flatTrimBt)).setOnClickListener(new View.OnClickListener() {
             public void onClick(View v) {
                 switch (mSkyControllerDrone.getFlyingState()) {

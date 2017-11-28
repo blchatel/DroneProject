@@ -157,12 +157,12 @@
             android:orientation="horizontal">
 
             <Button
-                android:id="@+id/downloadBt"
+                android:id="@+id/startMission"
                 style="@style/Widget.AppCompat.Button.Borderless"
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
                 android:layout_weight="1"
-                android:text="@string/download"
+                android:text="@string/startMis"
                 android:textColor="@android:color/white" />
 
             <Button
