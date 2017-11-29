@@ -499,7 +499,7 @@ public class AutoPilotModule {
                             y2 = y + h / 2;
                         }
 
-                        if(isEngaged) {
+                        if(true || isEngaged) {
                             double deltaX = mFrameCenter.x() - blobCenter.x();
                             double deltaY = mFrameCenter.y() - blobCenter.y();
 
@@ -512,15 +512,15 @@ public class AutoPilotModule {
 
                                 if (deltaX > 0) {
                                     Log.e(TAG, "Correct x right");
-                                    droneSettings.turnRight();
+                                    //droneSettings.turnRight();
                                     //droneSettings.turnLeft();
                                 } else {
                                     Log.e(TAG, "Correct x left");
-                                    droneSettings.turnLeft();
+                                    //droneSettings.turnLeft();
                                     //droneSettings.turnRight();
                                 }
                             } else {
-                                droneSettings.fixYaw();
+                                //droneSettings.fixYaw();
                             }
                             if (Math.abs(deltaY) > mDistance) {
                                 if (deltaY > 0) {

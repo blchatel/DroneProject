@@ -210,25 +210,17 @@ class DroneStatesSettingsProceduresModule implements ARDeviceControllerListener{
                 @Override
                 public boolean process() {
                     waitForEndConfig = false;
-                    mSKEModule.setDroneConfig(ConfigDrone.DFAULT_DRONE_CONFIG);
+                    mSKEModule.setDroneConfig(ConfigDrone.INDOOR_DRONE_CONFIG);
                     return true;
                 }
             });
+
             procedures.add(new Procedure() {
                 @Override
                 public boolean process() {
                     return sleep(1000);
                 }
             });
-
-            procedures.add(new Procedure() {
-                @Override
-                public boolean process() {
-                    waitForEndTakeOff = true;
-                    return autoTakeOff();
-                }
-            });
-
 
             procedures.add(new Procedure() {
                 @Override
@@ -236,13 +228,6 @@ class DroneStatesSettingsProceduresModule implements ARDeviceControllerListener{
                     waitForEndTrim = true;
                     mSKEModule.flatTrim();
                     return true;
-                }
-            });
-
-            procedures.add(new Procedure() {
-                @Override
-                public boolean process() {
-                    return sleep(1000);
                 }
             });
 

@@ -11,8 +11,6 @@ import ch.epfl.droneproject.DroneApplication;
 import ch.epfl.droneproject.drone.ConfigDrone;
 
 
-
-
 public class SkyControllerExtensionModule {
 
     private Context mContext;
@@ -69,7 +67,6 @@ public class SkyControllerExtensionModule {
                 (mDeviceController.getExtensionState().equals(ARCONTROLLER_DEVICE_STATE_ENUM.ARCONTROLLER_DEVICE_STATE_RUNNING))) {
 
             mDeviceController.getFeatureARDrone3().sendPilotingFlatTrim();
-            //DroneApplication.getApplication().getConsoleMessage().pushMessage("Flat trim");
         }
     }
 
