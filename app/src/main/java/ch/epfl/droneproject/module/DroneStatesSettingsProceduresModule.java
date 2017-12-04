@@ -218,26 +218,16 @@ class DroneStatesSettingsProceduresModule implements ARDeviceControllerListener{
             procedures.add(new Procedure() {
                 @Override
                 public boolean process() {
-                    return sleep(1000);
-                }
-            });
-
-            procedures.add(new Procedure() {
-                @Override
-                public boolean process() {
-                    waitForEndTrim = true;
-                    mSKEModule.flatTrim();
-                    return true;
-                }
-            });
-
-            procedures.add(new Procedure() {
-                @Override
-                public boolean process() {
                     return turnRight();
                 }
             });
 
+            procedures.add(new Procedure() {
+                @Override
+                public boolean process() {
+                    return sleep(2000);
+                }
+            });
             procedures.add(new Procedure() {
                 @Override
                 public boolean process() {
@@ -252,8 +242,30 @@ class DroneStatesSettingsProceduresModule implements ARDeviceControllerListener{
                 }
             });
 
+            procedures.add(new Procedure() {
+                @Override
+                public boolean process() {
+                    return climb();
+                }
+            });
+
+            procedures.add(new Procedure() {
+                @Override
+                public boolean process() {
+                    return sleep(2000);
+                }
+            });
+
+            procedures.add(new Procedure() {
+                @Override
+                public boolean process() {
+                    return stabilizeVertically();
+                }
+            });
+
             return true;
         }
+
 
         @Override
         public boolean next() {

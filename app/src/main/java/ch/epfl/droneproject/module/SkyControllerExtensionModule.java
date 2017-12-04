@@ -61,6 +61,10 @@ public class SkyControllerExtensionModule {
      * Could be useful when the drone is sliding in hover mode.
      * Result:
      * Accelerometer and gyroscope are calibrated then event FlatTrimChanged is triggered.
+     *
+     * When calling this method: Assume the drone is on a plane surface !
+     * The better way of trim the drone is using Flight Pro app !
+     *
      */
     public void flatTrim(){
         if ((mDeviceController != null) &&
@@ -69,6 +73,9 @@ public class SkyControllerExtensionModule {
             mDeviceController.getFeatureARDrone3().sendPilotingFlatTrim();
         }
     }
+
+
+
 
     public void setController(ARCOMMANDS_SKYCONTROLLER_COPILOTING_SETPILOTINGSOURCE_SOURCE_ENUM source){
         if ((mDeviceController != null) &&

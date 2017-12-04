@@ -305,7 +305,7 @@ public class AutoPilotModule {
 
             mFrameArea = cols*rows;
             mFrameCenter = new Point(width/2, height/2);
-            mDistance = Math.min(width, height)/5;
+            mDistance = Math.min(width, height)/3;
             pivotCenter = new Point(0, 0);
             mIsColorSelected = false;
             mDetector = new ColorBlobDetector(width, height);
@@ -499,13 +499,15 @@ public class AutoPilotModule {
                             y2 = y + h / 2;
                         }
 
-                        if(true || isEngaged) {
+                        if(isEngaged) {
                             double deltaX = mFrameCenter.x() - blobCenter.x();
                             double deltaY = mFrameCenter.y() - blobCenter.y();
 
                             // apply correction
                             if (blobArea / mFrameArea < AREA_THRESHOLD) {
                                 Log.e(TAG, "Become Closer");
+                            }else{
+
                             }
 
                             if (Math.abs(deltaX) > mDistance) {
@@ -513,14 +515,14 @@ public class AutoPilotModule {
                                 if (deltaX > 0) {
                                     Log.e(TAG, "Correct x right");
                                     //droneSettings.turnRight();
-                                    //droneSettings.turnLeft();
+                                    droneSettings.turnLeft();
                                 } else {
                                     Log.e(TAG, "Correct x left");
                                     //droneSettings.turnLeft();
-                                    //droneSettings.turnRight();
+                                    droneSettings.turnRight();
                                 }
                             } else {
-                                //droneSettings.fixYaw();
+                                droneSettings.fixYaw();
                             }
                             if (Math.abs(deltaY) > mDistance) {
                                 if (deltaY > 0) {
