@@ -64,7 +64,6 @@ public class SkyControllerExtensionModule {
      *
      * When calling this method: Assume the drone is on a plane surface !
      * The better way of trim the drone is using Flight Pro app !
-     *
      */
     public void flatTrim(){
         if ((mDeviceController != null) &&
@@ -75,14 +74,13 @@ public class SkyControllerExtensionModule {
     }
 
 
-
-
     public void setController(ARCOMMANDS_SKYCONTROLLER_COPILOTING_SETPILOTINGSOURCE_SOURCE_ENUM source){
         if ((mDeviceController != null) &&
                 (mDeviceController.getExtensionState().equals(ARCONTROLLER_DEVICE_STATE_ENUM.ARCONTROLLER_DEVICE_STATE_RUNNING))) {
             mDeviceController.getFeatureSkyController().sendCoPilotingSetPilotingSource(source);
         }
     }
+
 
     public void grabAxis(int buttons, int axis){
 

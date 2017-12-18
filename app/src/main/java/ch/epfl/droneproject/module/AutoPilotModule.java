@@ -91,6 +91,18 @@ public class AutoPilotModule {
         }
     }
 
+    public void becomeCloser(){
+        if(this.isEngaged) {
+            this.droneSettings.becomeCloser();
+        }
+    }
+    public void stopBecomeCloser(){
+        if(this.isEngaged) {
+            this.droneSettings.stopBecomeCloser();
+        }
+    }
+
+
     public DroneStatesSettingsProceduresModule getDroneSettings() {
         return droneSettings;
     }
@@ -505,7 +517,7 @@ public class AutoPilotModule {
 
                             // apply correction
                             if (blobArea / mFrameArea < AREA_THRESHOLD) {
-                                Log.e(TAG, "Become Closer");
+                                Log.e(TAG, "Become  : Press the button on screen");
                             }else{
 
                             }

@@ -2,6 +2,7 @@ package ch.epfl.droneproject.module;
 
 
 import android.os.Handler;
+import android.util.FloatMath;
 
 import com.parrot.arsdk.arcommands.ARCOMMANDS_ARDRONE3_PILOTINGSTATE_FLYINGSTATECHANGED_STATE_ENUM;
 import com.parrot.arsdk.arcontroller.ARCONTROLLER_DEVICE_STATE_ENUM;
@@ -23,7 +24,7 @@ import static com.parrot.arsdk.arcommands.ARCOMMANDS_ARDRONE3_PILOTINGSTATE_FLYI
 import static com.parrot.arsdk.arcommands.ARCOMMANDS_ARDRONE3_PILOTINGSTATE_FLYINGSTATECHANGED_STATE_ENUM.ARCOMMANDS_ARDRONE3_PILOTINGSTATE_FLYINGSTATECHANGED_STATE_HOVERING;
 
 
-class DroneStatesSettingsProceduresModule implements ARDeviceControllerListener{
+public class DroneStatesSettingsProceduresModule implements ARDeviceControllerListener{
 
     private SkyControllerExtensionModule mSKEModule;
     private final Handler mHandler;
@@ -140,6 +141,18 @@ class DroneStatesSettingsProceduresModule implements ARDeviceControllerListener{
     boolean descendBy(float dz){
         mSKEModule.moveBy(0,0, -dz, 0);
         return true;
+    }
+
+
+    public boolean becomeCloser(){
+        double dTilt = (double)tilt;
+        // TODO Check the tilt positive direction
+        mSKEModule.moveBy((float)Math.cos(dTilt),0, (float)Math.sin(dTilt), 0);
+        return true;
+    }
+    public boolean stopBecomeCloser(){
+        mSKEModule.moveBy(0,0, 0, 0);
+        return false;
     }
 
     /**

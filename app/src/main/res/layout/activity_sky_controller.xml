@@ -61,6 +61,26 @@
                 android:background="@drawable/emergency_btn"
                 android:text="@string/emergency"
                 android:textColor="#ffff0000" />
+
+            <LinearLayout
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:gravity="end"
+                android:orientation="horizontal">
+
+                <Button
+                    android:id="@+id/closerBtn"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:layout_alignParentTop="true"
+                    android:layout_centerHorizontal="true"
+                    android:layout_weight="1"
+                    android:width="150dp"
+                    android:background="@drawable/emergency_btn"
+                    android:text="@string/closer"
+                    android:textColor="#ffff0000" />
+            </LinearLayout>
+
         </LinearLayout>
 
     </RelativeLayout>

@@ -1,5 +1,6 @@
 package ch.epfl.droneproject.activity;
 
+import android.annotation.SuppressLint;
 import android.content.Intent;
 import android.graphics.Color;
 import android.support.v4.app.Fragment;
@@ -9,6 +10,7 @@ import android.support.v4.view.ViewPager;
 import android.support.v7.app.AppCompatActivity;
 import android.os.Bundle;
 import android.util.Log;
+import android.view.MotionEvent;
 import android.view.View;
 import android.widget.Button;
 import android.widget.ProgressBar;
@@ -29,6 +31,9 @@ import ch.epfl.droneproject.R;
 import ch.epfl.droneproject.drone.ConfigDrone;
 import ch.epfl.droneproject.drone.SkyControllerDrone;
 
+import static com.parrot.arsdk.arcommands.ARCOMMANDS_ARDRONE3_PILOTINGSTATE_FLYINGSTATECHANGED_STATE_ENUM.ARCOMMANDS_ARDRONE3_PILOTINGSTATE_FLYINGSTATECHANGED_STATE_FLYING;
+import static com.parrot.arsdk.arcommands.ARCOMMANDS_ARDRONE3_PILOTINGSTATE_FLYINGSTATECHANGED_STATE_ENUM.ARCOMMANDS_ARDRONE3_PILOTINGSTATE_FLYINGSTATECHANGED_STATE_HOVERING;
+
 
 public class SkyControllerActivity extends AppCompatActivity {
 
@@ -43,6 +48,7 @@ public class SkyControllerActivity extends AppCompatActivity {
 
 
     private Button mAutoPilotBt;
+    private Button mCloserBt;
 
 
     @Override
@@ -122,6 +128,7 @@ public class SkyControllerActivity extends AppCompatActivity {
     /**
      * Initialize all the the UI components and set all needed listener
      */
+    @SuppressLint("ClickableViewAccessibility")
     private void initIHM() {
 
         // Init the pager with the two fragment adapter
@@ -157,6 +164,38 @@ public class SkyControllerActivity extends AppCompatActivity {
                     mAutoPilotBt.setBackgroundResource(R.drawable.green_btn);
                 }
             }
+        });
+
+        mCloserBt = findViewById(R.id.closerBtn);
+        mCloserBt.setOnTouchListener(new View.OnTouchListener() {
+            @Override
+            public boolean onTouch(View v, MotionEvent event) {
+
+                boolean valid = mSkyControllerDrone.getFlyingState() == ARCOMMANDS_ARDRONE3_PILOTINGSTATE_FLYINGSTATECHANGED_STATE_FLYING ||
+                        mSkyControllerDrone.getFlyingState() == ARCOMMANDS_ARDRONE3_PILOTINGSTATE_FLYINGSTATECHANGED_STATE_HOVERING;
+
+                switch (event.getAction()) {
+                    case MotionEvent.ACTION_DOWN:
+                        if(valid) {
+                            v.setPressed(true);
+                            mSkyControllerDrone.autoPilotModule().becomeCloser();
+                        }
+                        break;
+
+                    case MotionEvent.ACTION_UP:
+
+                        if(valid) {
+                            v.setPressed(false);
+                            mSkyControllerDrone.autoPilotModule().stopBecomeCloser();
+                        }
+                        break;
+
+                    default:
+                        break;
+                }
+                return true;
+            }
+
         });
 
 
@@ -229,6 +268,7 @@ public class SkyControllerActivity extends AppCompatActivity {
             }
         });
     }
+
 
     /**
      * Show the progress bar with the text label

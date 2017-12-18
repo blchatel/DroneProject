@@ -43,5 +43,6 @@
     <string name="stopFLP">StopFLP</string>
     <string name="flatTrim">FlatTrimConfig</string>
     <string name="startMis">StartMis</string>
+    <string name="closer">Closer</string>
 
 </resources>
