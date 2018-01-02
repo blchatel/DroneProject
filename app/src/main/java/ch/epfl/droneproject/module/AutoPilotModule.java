@@ -12,13 +12,11 @@ import com.parrot.arsdk.arcommands.ARCOMMANDS_SKYCONTROLLER_COPILOTING_SETPILOTI
 
 import org.bytedeco.javacpp.Loader;
 import org.bytedeco.javacpp.indexer.UByteBufferIndexer;
-import org.bytedeco.javacpp.opencv_face;
 import org.bytedeco.javacpp.opencv_objdetect;
 
 import static org.bytedeco.javacpp.opencv_core.*;
 import static org.bytedeco.javacpp.opencv_imgproc.*;
 import static org.bytedeco.javacpp.opencv_objdetect.*;
-import static org.bytedeco.javacpp.opencv_face.createEigenFaceRecognizer;
 
 import java.io.File;
 import java.io.IOException;
@@ -177,12 +175,6 @@ public class AutoPilotModule {
             this.mContours = new ArrayList<>();
 
             try {
-                /*
-                URL url = new URL("https://raw.github.com/Itseez/opencv/2.4.0/data/haarcascades/haarcascade_frontalface_alt.xml");
-                File classifierFile = Loader.extractResource(url, null, "classifier", ".xml");
-                classifierFile.deleteOnExit();
-                */
-
                 // Load the classifier file from Java resources.
                 File classifierFile = Loader.extractResource(getClass(),
                         "/res/raw/haarcascade_frontalface_alt_old.xml",
@@ -227,71 +219,6 @@ public class AutoPilotModule {
             return mContours;
         }
     }
-
-
-    private class MyFaceRecognizer{
-
-        private opencv_objdetect.CvHaarClassifierCascade classifier;
-        private List<CvRect> mContours;
-        IplImage grayImage;
-
-        CvMemStorage storage;
-
-        MyFaceRecognizer(int width, int height) {
-            this.mContours = new ArrayList<>();
-            opencv_face.FaceRecognizer faceRecognizer = createEigenFaceRecognizer();
-
-            faceRecognizer.
-
-            try {
-
-                // Load the classifier file from Java resources.
-                File classifierFile = Loader.extractResource(getClass(),
-                        "/res/raw/haarcascade_frontalface_alt_old.xml",
-                        DroneApplication.getApplication().getContext().getCacheDir(), "classifier", ".xml");
-                classifierFile.deleteOnExit();
-                if (classifierFile.length() <= 0) {
-                    throw new IOException("Could not extract the classifier file from Java resource.");
-                }
-                Log.i(TAG, classifierFile.getAbsolutePath());
-
-                classifier = new opencv_objdetect.CvHaarClassifierCascade(cvLoad(classifierFile.getAbsolutePath()));
-                if (classifier.isNull()) {
-                    throw new IOException("Could not load the classifier file.");
-                }
-                grayImage = IplImage.create(width, height, IPL_DEPTH_8U, 1);
-                // Objects allocated with a create*() or clone() factory method are automatically released
-                // by the garbage collector, but may still be explicitly released by calling release().
-                // You shall NOT call cvReleaseImage(), cvReleaseMemStorage(), etc. on objects allocated this way.
-                storage = CvMemStorage.create();
-
-            } catch (IOException e) {
-                e.printStackTrace();
-                Log.e(TAG, "Failed to load cascade. Exception thrown: " + e);
-            }
-        }
-
-        void destroy(){
-            cvReleaseImage(grayImage);
-        }
-
-        void process(IplImage rgbaImage) {
-            // Let's try to detect some faces! but we need a grayscale image...
-            cvCvtColor(rgbaImage, grayImage, COLOR_RGB2GRAY);
-            CvSeq faces = cvHaarDetectObjects(grayImage, classifier, storage,1.1, 3, CV_HAAR_FIND_BIGGEST_OBJECT | CV_HAAR_DO_ROUGH_SEARCH);
-            int total = faces.total();
-            mContours.clear();
-            for (int i = 0; i < total; i++) {
-                mContours.add(new CvRect(cvGetSeqElem(faces, i)));
-            }
-        }
-        List<CvRect> getContours() {
-            return mContours;
-        }
-    }
-
-
-
 
 
     private class ColorBlobDetector {
@@ -416,6 +343,7 @@ public class AutoPilotModule {
 
         private ColorBlobDetector mBlobDetector;
         private FaceDetector mFaceDetector;
+        private AutoFaceRecognizer mFaceRecognizer;
         private int rows, cols;
         private int x1, y1, x2, y2;
 
@@ -457,13 +385,15 @@ public class AutoPilotModule {
             mFrameCenter = new Point(width/2, height/2);
             mDistance = Math.min(width, height)/3;
             pivotCenter = new Point(0, 0);
+            blobCenter = new Point(0, 0);
             mIsBlobFound = false;
             mIsFaceFound = false;
             mSearchBlob = true;
             mSearchFace = false;
+
             mBlobDetector = new ColorBlobDetector(width, height);
             mFaceDetector = new FaceDetector(width, height);
-            blobCenter = new Point(0, 0);
+            mFaceRecognizer = new AutoFaceRecognizer();
         }
 
 
@@ -662,6 +592,15 @@ public class AutoPilotModule {
                             y2 = y + h / 2;
 
                             mSearchFace = mIsFaceFound || blobArea / mFrameArea > AREA_THRESHOLD;
+
+                            if(true && mSearchFace){
+                                // Crop the image to keep the face only
+                                cvSetImageROI(grabbedImage, new CvRect(x1, y1, w, h));
+                                IplImage subIpl = cvCreateImage(cvGetSize(grabbedImage), grabbedImage.depth(), grabbedImage.nChannels());
+                                cvCopy(grabbedImage, subIpl);
+                                mFaceRecognizer.process(subIpl, w, h);
+                                cvResetImageROI(grabbedImage);
+                            }
                         }
 
                         if(isEngaged) {
