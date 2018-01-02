@@ -350,6 +350,7 @@ public class AutoPilotModule {
         private double mFrameArea, mDistance, blobArea;
         private Point mFrameCenter, pivotCenter, blobCenter;
         private boolean mIsBlobFound, mIsFaceFound, mSearchBlob, mSearchFace;
+        private boolean mIsReady;
 
 
         private OpenCVThread(BebopVideoView videoView, OpenCVView cvView) {
@@ -394,6 +395,7 @@ public class AutoPilotModule {
             mBlobDetector = new ColorBlobDetector(width, height);
             mFaceDetector = new FaceDetector(width, height);
             mFaceRecognizer = new AutoFaceRecognizer();
+            mIsReady = true;
         }
 
 
@@ -415,6 +417,10 @@ public class AutoPilotModule {
         @SuppressLint("ClickableViewAccessibility")
         @Override
         public boolean onTouch(View view, MotionEvent event) {
+
+            if(!mIsReady){
+                return false;
+            }
 
             switch (event.getAction()) {
                 case MotionEvent.ACTION_DOWN: {
@@ -526,7 +532,6 @@ public class AutoPilotModule {
             // Init final parameters for the thread from the image dimension
             init(mVideoView.getBitmap().getHeight(), mVideoView.getBitmap().getWidth());
 
-
             CvMemStorage storage = CvMemStorage.create();
             List<CvRect> contours;
 
@@ -593,7 +598,7 @@ public class AutoPilotModule {
 
                             mSearchFace = mIsFaceFound || blobArea / mFrameArea > AREA_THRESHOLD;
 
-                            if(true && mSearchFace){
+                            if(mSearchFace){
                                 // Crop the image to keep the face only
                                 cvSetImageROI(grabbedImage, new CvRect(x1, y1, w, h));
                                 IplImage subIpl = cvCreateImage(cvGetSize(grabbedImage), grabbedImage.depth(), grabbedImage.nChannels());

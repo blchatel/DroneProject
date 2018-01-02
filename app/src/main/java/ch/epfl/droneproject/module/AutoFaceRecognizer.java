@@ -177,5 +177,4 @@ public class AutoFaceRecognizer {
             Log.i(TAG, "End of Save");
         }
     }
-
 }
