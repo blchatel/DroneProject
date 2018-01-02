@@ -10,9 +10,10 @@ import android.view.View;
 
 public class OpenCVView extends View {
 
-    private final static int FACE_RECT_COLOR = Color.GREEN;
+    public final static int FACE_RECT_COLOR = Color.GREEN;
+    public final static int BLOB_RECT_COLOR = Color.RED;
     private Paint paint;
-    private MyCvRect object;
+    private MyCvRect rect;
 
     public OpenCVView(Context context) {
         this(context, null);
@@ -31,17 +32,20 @@ public class OpenCVView extends View {
         paint.setStyle(Paint.Style.STROKE);
         paint.setStrokeWidth(4f);
 
-        object = new MyCvRect();
+        rect = new MyCvRect();
     }
 
-    public void setObject(int x1, int y1, int x2, int y2){
-        this.object.setRect(x1, y1, x2, y2);
+    public void setRect(int x1, int y1, int x2, int y2){
+        this.rect.setRect(x1, y1, x2, y2);
+    }
+    public void setColor(int color){
+        paint.setColor(color);
     }
 
     @Override
     protected void onDraw(Canvas canvas) {
-        canvas.drawRect(object.x1, object.y1, object.x2, object.y2, paint);
-        canvas.drawCircle(object.xc, object.yc, 11, paint);
+        canvas.drawRect(rect.x1, rect.y1, rect.x2, rect.y2, paint);
+        canvas.drawCircle(rect.xc, rect.yc, 11, paint);
         super.onDraw(canvas);
     }
 

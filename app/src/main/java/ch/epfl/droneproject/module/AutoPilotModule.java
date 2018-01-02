@@ -11,14 +11,20 @@ import com.parrot.arsdk.arcommands.ARCOMMANDS_SKYCONTROLLER_COPILOTING_SETPILOTI
 
 import org.bytedeco.javacpp.Loader;
 import org.bytedeco.javacpp.indexer.UByteBufferIndexer;
+import org.bytedeco.javacpp.opencv_objdetect;
 
 import static org.bytedeco.javacpp.opencv_core.*;
 import static org.bytedeco.javacpp.opencv_imgproc.*;
+import static org.bytedeco.javacpp.opencv_objdetect.*;
 
+import java.io.File;
+import java.io.IOException;
+import java.net.URL;
 import java.util.ArrayList;
 import java.util.Calendar;
 import java.util.List;
 
+import ch.epfl.droneproject.DroneApplication;
 import ch.epfl.droneproject.view.BebopVideoView;
 import ch.epfl.droneproject.view.OpenCVView;
 
@@ -157,7 +163,82 @@ public class AutoPilotModule {
         }
     }
 
+    private class FaceDetector{
 
+        private opencv_objdetect.CvHaarClassifierCascade classifier;
+        private List<CvRect> mContours;
+        private int height;
+        private int width;
+        IplImage grayImage;
+
+        CvMemStorage storage;
+
+        public FaceDetector(int width, int height) {
+            this.mContours = new ArrayList<>();
+            this.width = width;
+            this.height = height;
+
+            try {
+                /*
+                URL url = new URL("https://raw.github.com/Itseez/opencv/2.4.0/data/haarcascades/haarcascade_frontalface_alt.xml");
+                File classifierFile = Loader.extractResource(url, null, "classifier", ".xml");
+                classifierFile.deleteOnExit();
+                */
+
+                // Load the classifier file from Java resources.
+                File classifierFile = Loader.extractResource(getClass(),
+                        "/res/raw/haarcascade_frontalface_alt_old.xml",
+                        DroneApplication.getApplication().getContext().getCacheDir(), "classifier", ".xml");
+                classifierFile.deleteOnExit();
+                if (classifierFile == null || classifierFile.length() <= 0) {
+                    throw new IOException("Could not extract the classifier file from Java resource.");
+                }
+                Log.e(TAG, classifierFile.getAbsolutePath());
+                // Preload the opencv_objdetect module to work around a known bug.
+                Loader.load(opencv_objdetect.class);
+
+                classifier = new opencv_objdetect.CvHaarClassifierCascade(cvLoad(classifierFile.getAbsolutePath()));
+                //classifier = new opencv_objdetect.CvHaarClassifierCascade();
+                //classifierFile.delete();
+                if (classifier.isNull()) {
+                    throw new IOException("Could not load the classifier file.");
+                }
+
+                grayImage = IplImage.create(width, height, IPL_DEPTH_8U, 1);
+                // Objects allocated with a create*() or clone() factory method are automatically released
+                // by the garbage collector, but may still be explicitly released by calling release().
+                // You shall NOT call cvReleaseImage(), cvReleaseMemStorage(), etc. on objects allocated this way.
+                storage = CvMemStorage.create();
+
+
+            } catch (IOException e) {
+                e.printStackTrace();
+                Log.e(TAG, "Failed to load cascade. Exception thrown: " + e);
+            }
+        }
+
+        void destroy(){
+            cvReleaseImage(grayImage);
+        }
+
+        void process(IplImage rgbaImage) {
+            //cvClearMemStorage(storage);
+            Log.e(TAG, "LOL");
+            // Let's try to detect some faces! but we need a grayscale image...
+            cvCvtColor(rgbaImage, grayImage, COLOR_RGB2GRAY);
+            //cvCvtColor(rgbaImage, grayImage, CV_RGBA2GRAY);
+            //cvCvtColor(rgbaImage, grayImage, CV_BGR2GRAY);
+            CvSeq faces = cvHaarDetectObjects(grayImage, classifier, storage,1.1, 3, CV_HAAR_FIND_BIGGEST_OBJECT | CV_HAAR_DO_ROUGH_SEARCH);
+            int total = faces.total();
+            mContours.clear();
+            for (int i = 0; i < total; i++) {
+                mContours.add(new CvRect(cvGetSeqElem(faces, i)));
+            }
+        }
+        List<CvRect> getContours() {
+            return mContours;
+        }
+    }
 
     private class ColorBlobDetector {
 
@@ -279,13 +360,14 @@ public class AutoPilotModule {
 
         private IplImage grabbedImage;
 
-        private ColorBlobDetector mDetector;
+        private ColorBlobDetector mBlobDetector;
+        private FaceDetector mFaceDetector;
         private int rows, cols;
         private int x1, y1, x2, y2;
 
         private double mFrameArea, mDistance, blobArea;
         private Point mFrameCenter, pivotCenter, blobCenter;
-        private boolean mIsColorSelected;
+        private boolean mIsBlobFound, mIsFaceFound, mSearchBlob, mSearchFace;
 
 
         private OpenCVThread(BebopVideoView videoView, OpenCVView cvView) {
@@ -295,6 +377,8 @@ public class AutoPilotModule {
             System.loadLibrary("opencv_core");
             System.loadLibrary("opencv_imgproc");
             System.loadLibrary("jniopencv_core");
+            // Preload the opencv_objdetect module to work around a known bug.
+            Loader.load(opencv_objdetect.class);
 
             mVideoView = videoView;
             mOpenCVView = cvView;
@@ -319,8 +403,12 @@ public class AutoPilotModule {
             mFrameCenter = new Point(width/2, height/2);
             mDistance = Math.min(width, height)/3;
             pivotCenter = new Point(0, 0);
-            mIsColorSelected = false;
-            mDetector = new ColorBlobDetector(width, height);
+            mIsBlobFound = false;
+            mIsFaceFound = false;
+            mSearchBlob = true;
+            mSearchFace = false;
+            mBlobDetector = new ColorBlobDetector(width, height);
+            mFaceDetector = new FaceDetector(width, height);
             blobCenter = new Point(0, 0);
         }
 
@@ -428,10 +516,11 @@ public class AutoPilotModule {
             V /= pointCount;
 
             // Set the new value after calibration
-            mDetector.setHsvColor(H, S, V);
+            mBlobDetector.setHsvColor(H, S, V);
             blobCenter.x(x);
             blobCenter.y(y);
-            mIsColorSelected = true;
+            mSearchBlob = true;
+            mSearchFace = false;
         }
 
         @Override
@@ -455,6 +544,7 @@ public class AutoPilotModule {
 
             CvMemStorage storage = CvMemStorage.create();
             List<CvRect> contours;
+            List<CvRect> faceContours;
 
             while (!interrupted) {
                 cvClearMemStorage(storage);
@@ -470,16 +560,23 @@ public class AutoPilotModule {
                     // - Get the contours and find the contours which is the closest of previous found center.
                     // - Compute the approximate area and centroid of this new contour
                     // - Draw them on the frame, and return the frame
-                    if (mIsColorSelected) {
+                    if (mSearchBlob || mSearchFace) {
 
-                        mDetector.process(grabbedImage);
-                        contours = mDetector.getContours();
+                        if(mSearchFace){
+                            mFaceDetector.process(grabbedImage);
+                            contours = mFaceDetector.getContours();
+                            mIsFaceFound = contours.size() > 0;
+                            mIsBlobFound = false;
+                        }
+                        else{
+                            mBlobDetector.process(grabbedImage);
+                            contours = mBlobDetector.getContours();
+                            mIsFaceFound = false;
+                            mIsBlobFound = contours.size() > 0;
+                        }
 
                         // If no contour ask the user to tap a new color pixel
-                        if (contours.size() < 1) {
-                            mIsColorSelected = false;
-                        } else {
-
+                        if(mIsBlobFound || mIsFaceFound){
                             double d = Double.POSITIVE_INFINITY;
                             int x = 0, y = 0, w = 0, h = 0;
 
@@ -509,6 +606,8 @@ public class AutoPilotModule {
                             x2 = x + w / 2;
                             y1 = y - h / 2;
                             y2 = y + h / 2;
+
+                            mSearchFace = mIsFaceFound || blobArea / mFrameArea > AREA_THRESHOLD;
                         }
 
                         if(isEngaged) {
@@ -516,10 +615,8 @@ public class AutoPilotModule {
                             double deltaY = mFrameCenter.y() - blobCenter.y();
 
                             // apply correction
-                            if (blobArea / mFrameArea < AREA_THRESHOLD) {
-                                Log.e(TAG, "Become  : Press the button on screen");
-                            }else{
-
+                            if (!mSearchFace) {
+                                Log.e(TAG, "Become closer for better face detection: Press the button on screen");
                             }
 
                             if (Math.abs(deltaX) > mDistance) {
@@ -552,7 +649,8 @@ public class AutoPilotModule {
                     runOnUiThread(new Runnable() {
                         @Override
                         public void run() {
-                            mOpenCVView.setObject(x1, y1, x2, y2);
+                            mOpenCVView.setColor(mIsBlobFound ? OpenCVView.BLOB_RECT_COLOR : OpenCVView.FACE_RECT_COLOR);
+                            mOpenCVView.setRect(x1, y1, x2, y2);
                             mOpenCVView.invalidate();
                         }
                     });
@@ -566,7 +664,7 @@ public class AutoPilotModule {
 
             }
 
-            mDetector.destroy();
+            mBlobDetector.destroy();
             cvReleaseImage(grabbedImage);
         }
 
