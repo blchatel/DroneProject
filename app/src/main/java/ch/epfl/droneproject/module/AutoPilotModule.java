@@ -1,5 +1,6 @@
 package ch.epfl.droneproject.module;
 
+import android.annotation.SuppressLint;
 import android.content.Context;
 import android.graphics.Bitmap;
 import android.os.Handler;
@@ -19,7 +20,6 @@ import static org.bytedeco.javacpp.opencv_objdetect.*;
 
 import java.io.File;
 import java.io.IOException;
-import java.net.URL;
 import java.util.ArrayList;
 import java.util.Calendar;
 import java.util.List;
@@ -167,16 +167,12 @@ public class AutoPilotModule {
 
         private opencv_objdetect.CvHaarClassifierCascade classifier;
         private List<CvRect> mContours;
-        private int height;
-        private int width;
         IplImage grayImage;
 
         CvMemStorage storage;
 
-        public FaceDetector(int width, int height) {
+        FaceDetector(int width, int height) {
             this.mContours = new ArrayList<>();
-            this.width = width;
-            this.height = height;
 
             try {
                 /*
@@ -190,26 +186,20 @@ public class AutoPilotModule {
                         "/res/raw/haarcascade_frontalface_alt_old.xml",
                         DroneApplication.getApplication().getContext().getCacheDir(), "classifier", ".xml");
                 classifierFile.deleteOnExit();
-                if (classifierFile == null || classifierFile.length() <= 0) {
+                if (classifierFile.length() <= 0) {
                     throw new IOException("Could not extract the classifier file from Java resource.");
                 }
-                Log.e(TAG, classifierFile.getAbsolutePath());
-                // Preload the opencv_objdetect module to work around a known bug.
-                Loader.load(opencv_objdetect.class);
+                Log.i(TAG, classifierFile.getAbsolutePath());
 
                 classifier = new opencv_objdetect.CvHaarClassifierCascade(cvLoad(classifierFile.getAbsolutePath()));
-                //classifier = new opencv_objdetect.CvHaarClassifierCascade();
-                //classifierFile.delete();
                 if (classifier.isNull()) {
                     throw new IOException("Could not load the classifier file.");
                 }
-
                 grayImage = IplImage.create(width, height, IPL_DEPTH_8U, 1);
                 // Objects allocated with a create*() or clone() factory method are automatically released
                 // by the garbage collector, but may still be explicitly released by calling release().
                 // You shall NOT call cvReleaseImage(), cvReleaseMemStorage(), etc. on objects allocated this way.
                 storage = CvMemStorage.create();
-
 
             } catch (IOException e) {
                 e.printStackTrace();
@@ -222,12 +212,8 @@ public class AutoPilotModule {
         }
 
         void process(IplImage rgbaImage) {
-            //cvClearMemStorage(storage);
-            Log.e(TAG, "LOL");
             // Let's try to detect some faces! but we need a grayscale image...
             cvCvtColor(rgbaImage, grayImage, COLOR_RGB2GRAY);
-            //cvCvtColor(rgbaImage, grayImage, CV_RGBA2GRAY);
-            //cvCvtColor(rgbaImage, grayImage, CV_BGR2GRAY);
             CvSeq faces = cvHaarDetectObjects(grayImage, classifier, storage,1.1, 3, CV_HAAR_FIND_BIGGEST_OBJECT | CV_HAAR_DO_ROUGH_SEARCH);
             int total = faces.total();
             mContours.clear();
@@ -428,6 +414,7 @@ public class AutoPilotModule {
             return (a.x()-b.x())*(a.x()-b.x()) + (a.y()-b.y())*(a.y()-b.y());
         }
 
+        @SuppressLint("ClickableViewAccessibility")
         @Override
         public boolean onTouch(View view, MotionEvent event) {
 
@@ -544,7 +531,6 @@ public class AutoPilotModule {
 
             CvMemStorage storage = CvMemStorage.create();
             List<CvRect> contours;
-            List<CvRect> faceContours;
 
             while (!interrupted) {
                 cvClearMemStorage(storage);
@@ -665,6 +651,7 @@ public class AutoPilotModule {
             }
 
             mBlobDetector.destroy();
+            mFaceDetector.destroy();
             cvReleaseImage(grabbedImage);
         }
 
