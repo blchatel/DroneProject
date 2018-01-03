@@ -642,6 +642,9 @@ public class AutoPilotModule {
                                 mText = "";
                             }
 
+                            // TODO ! 
+
+
                         }
 
                         // If the drone is in flight plan or inMission -> do nothing for not altering the plan or the mission !
