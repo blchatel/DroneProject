@@ -14,6 +14,7 @@ public class OpenCVView extends View {
     public final static int BLOB_RECT_COLOR = Color.RED;
     private Paint paint;
     private MyCvRect rect;
+    private String text;
 
     public OpenCVView(Context context) {
         this(context, null);
@@ -31,8 +32,10 @@ public class OpenCVView extends View {
         paint.setColor(FACE_RECT_COLOR);
         paint.setStyle(Paint.Style.STROKE);
         paint.setStrokeWidth(4f);
+        paint.setTextSize(40);
 
         rect = new MyCvRect();
+        text = "";
     }
 
     public void setRect(int x1, int y1, int x2, int y2){
@@ -41,9 +44,15 @@ public class OpenCVView extends View {
     public void setColor(int color){
         paint.setColor(color);
     }
+    public void setText(String text){
+        this.text = text;
+    }
 
     @Override
     protected void onDraw(Canvas canvas) {
+        if(text != null) {
+            canvas.drawText(text, rect.x1, rect.y1 - 10, paint);
+        }
         canvas.drawRect(rect.x1, rect.y1, rect.x2, rect.y2, paint);
         canvas.drawCircle(rect.xc, rect.yc, 11, paint);
         super.onDraw(canvas);

@@ -36,6 +36,7 @@ public class AutoPilotModule {
     // Is the Autopilot engaged
     private boolean isEngaged;
     private boolean isInFlightPlan;
+    private boolean isInMission;
 
     // Controller extension module
     private SkyControllerExtensionModule mSKEModule;
@@ -53,14 +54,13 @@ public class AutoPilotModule {
 
     public AutoPilotModule(SkyControllerExtensionModule skeModule) {
 
-        //this.isEngaged = true;
         this.isEngaged = false;
         this.isInFlightPlan = false;
 
         this.mSKEModule = skeModule;
         this.mFlightPlanerModule = new FlightPlanerModule();
 
-        this.droneSettings = new DroneStatesSettingsProceduresModule(skeModule);
+        this.droneSettings = new DroneStatesSettingsProceduresModule(skeModule, this);
 
         this.openCVThread = null;
     }
@@ -78,7 +78,10 @@ public class AutoPilotModule {
         b1 = b1 | (1 << 3);
         mSKEModule.grabAxis(0, b1);
         if(this.isInFlightPlan){
-            startAutoFlightPlan();
+            startAutoFlightPlan(); // continue the flight plan
+        }
+        if(this.isInMission){
+            startMission(); // continue the mission
         }
     }
 
@@ -89,25 +92,48 @@ public class AutoPilotModule {
         if(this.isInFlightPlan){
             pauseAutoFlightPlan();
         }
+        if(this.isInMission){
+            pauseMission();
+        }
     }
 
+    /**
+     * Starts or continues the Drone mission.
+     * See the DroneStatesSettingsProceduresModule constructor to define which mission to start
+     */
     public void startMission(){
         if(this.isEngaged) {
+            this.isInMission = true;
             this.droneSettings.startMission();
         }
     }
 
+    /**
+     * Pauses the drone mission
+     * Warning: Please use this method only on autopilot disengage call
+     */
+    private void pauseMission(){
+        this.droneSettings.pauseMission();
+    }
+
+    /**
+     * Ends the drone mission
+     */
+    void endMission() {
+        isInMission = false;
+    }
+
+
     public void becomeCloser(){
         if(this.isEngaged) {
-            this.droneSettings.becomeCloser();
+            this.droneSettings.getCloserTo();
         }
     }
     public void stopBecomeCloser(){
-        if(this.isEngaged) {
-            this.droneSettings.stopBecomeCloser();
-        }
+        //if(this.isEngaged) {
+            this.droneSettings.stopGetCloserTo();
+        //}
     }
-
 
     public DroneStatesSettingsProceduresModule getDroneSettings() {
         return droneSettings;
@@ -124,9 +150,13 @@ public class AutoPilotModule {
     }
     public void pauseAutoFlightPlan(){  this.mSKEModule.pauseFlightPlan();}
     public void stopAutoFlightPlan(){
-        this.isInFlightPlan = false;
+        endFlightPlan();
         this.mSKEModule.stopFlightPlan();
     }
+    void endFlightPlan() {
+        isInFlightPlan = false;
+    }
+
 
     public void setCameraInfo(final float fov, final float panMin, final float panMax, final float tiltMin, final float tiltMax){
         droneSettings.setCameraSettings(fov, panMin, panMax, tiltMin, tiltMax);
@@ -162,6 +192,8 @@ public class AutoPilotModule {
             }
         }
     }
+
+
 
     private class FaceDetector{
 
@@ -351,6 +383,7 @@ public class AutoPilotModule {
         private Point mFrameCenter, pivotCenter, blobCenter;
         private boolean mIsBlobFound, mIsFaceFound, mSearchBlob, mSearchFace;
         private boolean mIsReady;
+        private String mText;
 
 
         private OpenCVThread(BebopVideoView videoView, OpenCVView cvView) {
@@ -603,9 +636,12 @@ public class AutoPilotModule {
                                 cvSetImageROI(grabbedImage, new CvRect(x1, y1, w, h));
                                 IplImage subIpl = cvCreateImage(cvGetSize(grabbedImage), grabbedImage.depth(), grabbedImage.nChannels());
                                 cvCopy(grabbedImage, subIpl);
-                                mFaceRecognizer.process(subIpl, w, h);
+                                mText = mFaceRecognizer.process(subIpl, w, h);
                                 cvResetImageROI(grabbedImage);
+                            }else{
+                                mText = "";
                             }
+
                         }
 
                         if(isEngaged) {
@@ -648,6 +684,7 @@ public class AutoPilotModule {
                         @Override
                         public void run() {
                             mOpenCVView.setColor(mIsBlobFound ? OpenCVView.BLOB_RECT_COLOR : OpenCVView.FACE_RECT_COLOR);
+                            mOpenCVView.setText(mIsBlobFound ? "" : mText);
                             mOpenCVView.setRect(x1, y1, x2, y2);
                             mOpenCVView.invalidate();
                         }

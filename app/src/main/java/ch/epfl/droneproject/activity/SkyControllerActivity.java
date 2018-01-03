@@ -146,7 +146,7 @@ public class SkyControllerActivity extends AppCompatActivity {
             }
         });
 
-        // init the emergency button
+        // init the autopilot button
         mAutoPilotBt = findViewById(R.id.autopilot);
         mAutoPilotBt.setOnClickListener(new View.OnClickListener() {
             public void onClick(View v) {

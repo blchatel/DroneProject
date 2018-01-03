@@ -70,7 +70,7 @@ public class AutoFaceRecognizer {
         }
     }
 
-    public void process(IplImage rgbaImage, int w, int h){
+    public String process(IplImage rgbaImage, int w, int h){
         if(isTrained) {
 
             IplImage inputIpl = cvCreateImage(cvSize(w, h), IPL_DEPTH_8U, 1);
@@ -99,7 +99,9 @@ public class AutoFaceRecognizer {
             String labelInfo = faceRecognizer.getLabelInfo(label).getString();
             //Log.e(TAG, "Predicted label: " + labelInfo + ", confidence: " + confidence);
             Log.e(TAG, "Predicted label: " + label+ " - "+labelInfo + ", confidence: " + confidence);
+            return labelInfo;
         }
+        return "";
     }
 
 
