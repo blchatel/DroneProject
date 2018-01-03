@@ -644,7 +644,9 @@ public class AutoPilotModule {
 
                         }
 
-                        if(isEngaged) {
+                        // If the drone is in flight plan or inMission -> do nothing for not altering the plan or the mission !
+                        // Once the mission ended, start tracking.
+                        if(isEngaged && !isInFlightPlan && !isInMission) {
                             double deltaX = mFrameCenter.x() - blobCenter.x();
                             double deltaY = mFrameCenter.y() - blobCenter.y();
 

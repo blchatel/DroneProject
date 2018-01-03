@@ -39,6 +39,7 @@ public class DroneStatesSettingsProceduresModule implements ARDeviceControllerLi
 
     // Current mission and states flag
     private Mission currentMission;
+    private boolean currentMissionRunning;
 
     /**
      * Default constructor for DroneStatesSettingsProceduresModule
@@ -284,6 +285,7 @@ public class DroneStatesSettingsProceduresModule implements ARDeviceControllerLi
      */
     void startMission(){
         DroneApplication.getApplication().getConsoleMessage().pushMessage("Start or continue Mission");
+        currentMissionRunning = true;
         currentMission.start();
     }
 
@@ -293,22 +295,52 @@ public class DroneStatesSettingsProceduresModule implements ARDeviceControllerLi
      * Warning: Hence Please use this method only on autopilot disengage call
      */
     void pauseMission(){
+        currentMissionRunning = false;
         currentMission.pause();
     }
 
+    /**
+     * Start the Happy Mission if no mission is currently running
+     */
+    void startHappy() {
+        if (!currentMissionRunning){
+            currentMission = happyMission;
+            currentMission.reset();
+            startMission();
+        }
+    }
 
-    // TODO
-    void appendHappy(){
-        currentMission.append(happyMission);
+    /**
+     * Start properly the Angry Mission if no mission is currently running
+     */
+    void startAngry(){
+        if (!currentMissionRunning) {
+            currentMission = angryMission;
+            currentMission.reset();
+            startMission();
+        }
     }
-    void appendAngry(){
-        currentMission.append(angryMission);
+
+    /**
+     * Start properly the  Unkonwn Mission if no mission is currently running
+     */
+    void startUnknown(){
+        if (!currentMissionRunning) {
+            currentMission = unknownMission;
+            currentMission.reset();
+            startMission();
+        }
     }
-    void appendUnknown(){
-        currentMission.append(unknownMission);
-    }
-    void resetMission(){
-        //currentMission
+
+    /**
+     * Start properly the Part1 Mission if no mission is currently running
+     */
+    void startFinalPart1(){
+        if (!currentMissionRunning) {
+            currentMission = finalMissionPart1;
+            currentMission.reset();
+            startMission();
+        }
     }
 
     /**
@@ -324,6 +356,18 @@ public class DroneStatesSettingsProceduresModule implements ARDeviceControllerLi
 
         // "Wait for callback" flags
         boolean pauseMission = true, waitForConfigEnd, waitForFlyingStateChanged, waitForPlayingStateChanged, waitForMoveByEnd;
+
+        /**
+         * Reset the mission. This method implies on next start, init will be called
+         * @return true (boolean)
+         */
+        boolean reset(){
+            currentProcedure = -1;
+            procedures = new ArrayList<>();
+            pauseMission = true;
+            waitForConfigEnd = false; waitForFlyingStateChanged = false; waitForPlayingStateChanged = false; waitForMoveByEnd = false;
+            return true;
+        }
 
         /**
          * Start the mission. If the mission is already started, this method continue it
