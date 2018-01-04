@@ -1,11 +1,12 @@
 package ch.epfl.droneproject;
 
-import android.util.Log;
-
 import java.util.ArrayList;
 import java.util.List;
 
-
+/**
+ * ConsoleMessages.java
+ * @author blchatel
+ */
 public class ConsoleMessages{
 
     private static final int MAX_MESSAGE_NUMBER = 70;
@@ -45,5 +46,4 @@ public class ConsoleMessages{
             listener.newMessageAdded(newMessage);
         }
     }
-
 }

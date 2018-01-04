@@ -8,6 +8,18 @@ import android.util.AttributeSet;
 import android.view.View;
 
 
+/**
+ * OpenCVView.java
+ * @author blchatel
+ *
+ * This class is a simple drawn layer with the OpenCv computed information
+ * @see ch.epfl.droneproject.module.AutoPilotModule
+ * In other words, this class draws rectangle of specific color in overlay to the drone streaming
+ * images
+ *
+ * This class provide private class
+ * @see MyCvRect
+ */
 public class OpenCVView extends View {
 
     public final static int FACE_RECT_COLOR = Color.GREEN;
@@ -58,7 +70,9 @@ public class OpenCVView extends View {
         super.onDraw(canvas);
     }
 
-
+    /**
+     * Simple rect refined by top left corner, bottom right one and center
+     */
     private class MyCvRect{
 
         float x1, y1, x2, y2, xc, yc;

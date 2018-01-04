@@ -17,7 +17,14 @@ import java.nio.ByteBuffer;
 import java.util.concurrent.locks.Lock;
 import java.util.concurrent.locks.ReentrantLock;
 
-
+/**
+ * BebopVideoView.java
+ * @author blchatel
+ *
+ * Bebop streaming view, displaying the live recorded frames. This class is inspired from
+ * parrot samples, but has been adapted to extends TextureView which allows extracting Bitmap image
+ * (i.e. useful for OpenCv Computation)
+ */
 public class BebopVideoView extends TextureView implements TextureView.SurfaceTextureListener {
 
     private static final String TAG = "BebopVideoView";

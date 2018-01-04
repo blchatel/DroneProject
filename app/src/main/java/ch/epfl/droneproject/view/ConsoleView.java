@@ -2,12 +2,22 @@ package ch.epfl.droneproject.view;
 
 import android.content.Context;
 import android.util.AttributeSet;
-import android.util.Log;
 
 import ch.epfl.droneproject.ConsoleMessages;
-import ch.epfl.droneproject.DroneApplication;
 
 
+/**
+ * ConsoleView.java
+ * @author blchatel
+ *
+ * Because we want sometimes some feedback from the computation. This small view can display texts
+ * like a log console would.
+ *
+ * It is working like a stack where new message are displayed on top and older messages are droped
+ * The stack can contains MAX_NUMBER_LINE line of message
+ *
+ * Be careful on the thread you are before pushing a message on it !
+ */
 public class ConsoleView extends android.support.v7.widget.AppCompatEditText implements ConsoleMessages.Listener {
     public static final int MAX_NUMBER_LINE = 70;
     private int currentNumberLine = 0;
