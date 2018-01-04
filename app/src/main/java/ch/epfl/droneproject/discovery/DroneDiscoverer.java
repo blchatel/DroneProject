@@ -17,6 +17,17 @@ import com.parrot.arsdk.ardiscovery.receivers.ARDiscoveryServicesDevicesListUpda
 import java.util.ArrayList;
 import java.util.List;
 
+
+/**
+ * DroneDiscoverer.java
+ * @author blchatel
+ *
+ * Class from Parrot Samples adapted for the need of this project
+ *
+ * This class allow drone discover in the corresponding activity
+ * @see ch.epfl.droneproject.activity.DeviceListActivity
+ *
+ */
 public class DroneDiscoverer
 {
     private static final String TAG = "DroneDiscoverer";

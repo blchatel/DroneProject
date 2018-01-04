@@ -1,5 +1,13 @@
 package ch.epfl.droneproject.drone;
 
+
+/**
+ * ConfigDrone.java
+ * @author blchatel
+ *
+ * Simple class to predefine some configuration to the drone
+ * Provide getters and some prdefined configuration for indoor and outdoor mode
+ */
 public class ConfigDrone {
 
     /**

@@ -7,7 +7,6 @@ import android.util.Log;
 
 import com.parrot.arsdk.arcommands.ARCOMMANDS_ARDRONE3_MEDIARECORDEVENT_PICTUREEVENTCHANGED_ERROR_ENUM;
 import com.parrot.arsdk.arcommands.ARCOMMANDS_ARDRONE3_PILOTINGSTATE_FLYINGSTATECHANGED_STATE_ENUM;
-import com.parrot.arsdk.arcommands.ARCOMMANDS_COMMON_MAVLINKSTATE_MAVLINKPLAYERRORSTATECHANGED_ERROR_ENUM;
 import com.parrot.arsdk.arcontroller.ARCONTROLLER_DEVICE_STATE_ENUM;
 import com.parrot.arsdk.arcontroller.ARCONTROLLER_DICTIONARY_KEY_ENUM;
 import com.parrot.arsdk.arcontroller.ARCONTROLLER_ERROR_ENUM;
@@ -39,7 +38,19 @@ import ch.epfl.droneproject.module.AutoPilotModule;
 import ch.epfl.droneproject.module.SkyControllerExtensionModule;
 
 
-
+/**
+ * SkyControllerDrone.java
+ * @author blchatel
+ *
+ * Class from Parrot Samples adapted for the need of this project
+ *
+ * This class is the top level representation of the drone via its SkyController 2 in this app.
+ * This class is used in the corresponding activity and make the link between that activity and the
+ * autopilot, and other modules
+ * @see ch.epfl.droneproject.activity.SkyControllerActivity
+ * @see AutoPilotModule
+ * @see SkyControllerExtensionModule
+ */
 public class SkyControllerDrone {
 
     private static final String TAG = "SkyControllerDrone";
@@ -102,10 +113,15 @@ public class SkyControllerDrone {
         void onFrameReceived(ARFrame frame);
 
         /**
-         *
+         * Called when the autopilot is disengaged
+         * Called on a separate thread
          */
         void onAutoPilotDisengage();
 
+        /**
+         * Called when the Drone position change
+         * Called on a separate thread
+         */
         void onDronePositionChange();
     }
 
@@ -138,6 +154,11 @@ public class SkyControllerDrone {
         mAutoPilotModule = new AutoPilotModule(mSKEModule);
     }
 
+    /**
+     * Default constructor
+     * @param context (Context)
+     * @param deviceService (ARDiscoveryDeviceService)
+     */
     public SkyControllerDrone(Context context, @NonNull ARDiscoveryDeviceService deviceService) {
 
         mContext = context;
@@ -474,14 +495,21 @@ public class SkyControllerDrone {
                 }
             }
 
+            /*
+            // Not used yet
             // If the event received is the Autonomous flight availability changed
             else if ((commandKey == ARCONTROLLER_DICTIONARY_KEY_ENUM.ARCONTROLLER_DICTIONARY_KEY_COMMON_FLIGHTPLANSTATE_AVAILABILITYSTATECHANGED) && (elementDictionary != null)){
+
                 ARControllerArgumentDictionary<Object> args = elementDictionary.get(ARControllerDictionary.ARCONTROLLER_DICTIONARY_SINGLE_KEY);
+
                 if (args != null) {
                     byte AvailabilityState = (byte)((Integer)args.get(ARFeatureCommon.ARCONTROLLER_DICTIONARY_KEY_COMMON_FLIGHTPLANSTATE_AVAILABILITYSTATECHANGED_AVAILABILITYSTATE)).intValue();
                 }
             }
+            */
 
+            /*
+            // Not used yet
             //Autonomous flight state error:
             else if ((commandKey == ARCONTROLLER_DICTIONARY_KEY_ENUM.ARCONTROLLER_DICTIONARY_KEY_COMMON_MAVLINKSTATE_MAVLINKPLAYERRORSTATECHANGED) && (elementDictionary != null)){
                 ARControllerArgumentDictionary<Object> args = elementDictionary.get(ARControllerDictionary.ARCONTROLLER_DICTIONARY_SINGLE_KEY);
@@ -490,6 +518,7 @@ public class SkyControllerDrone {
                             ARCOMMANDS_COMMON_MAVLINKSTATE_MAVLINKPLAYERRORSTATECHANGED_ERROR_ENUM.getFromValue((Integer)args.get(ARFeatureCommon.ARCONTROLLER_DICTIONARY_KEY_COMMON_MAVLINKSTATE_MAVLINKPLAYERRORSTATECHANGED_ERROR));
                 }
             }
+            */
 
             // If altitude change ()
             else if ((commandKey == ARCONTROLLER_DICTIONARY_KEY_ENUM.ARCONTROLLER_DICTIONARY_KEY_ARDRONE3_PILOTINGSTATE_ATTITUDECHANGED) && (elementDictionary != null)){
