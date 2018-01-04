@@ -24,7 +24,24 @@ import ch.epfl.droneproject.drone.ConfigDrone;
 import static com.parrot.arsdk.arcommands.ARCOMMANDS_ARDRONE3_PILOTINGSTATE_FLYINGSTATECHANGED_STATE_ENUM.ARCOMMANDS_ARDRONE3_PILOTINGSTATE_FLYINGSTATECHANGED_STATE_FLYING;
 import static com.parrot.arsdk.arcommands.ARCOMMANDS_ARDRONE3_PILOTINGSTATE_FLYINGSTATECHANGED_STATE_ENUM.ARCOMMANDS_ARDRONE3_PILOTINGSTATE_FLYINGSTATECHANGED_STATE_HOVERING;
 
-
+/**
+ * DroneStatesSettingsProceduresModule.java
+ * @author blchatel
+ *
+ * Contains all the current drone states and setting (i.e values are updated periodically).
+ * Can use their value to help the linked autopilot
+ * @see AutoPilotModule
+ * or to give directly orders to the drone
+ * @see SkyControllerExtensionModule
+ *
+ * This file give the following private class and interface
+ * @see Mission Iterative mission made of procedure
+ * @see Procedure Single procedure for an iterative mission. Can be process
+ *
+ * This class implements
+ * @see ARDeviceControllerListener which allow it to get callback from the drone. Especially useful
+ * when an iterative mission is waiting a callback before continue (i.e. end of current procedure)
+ */
 public class DroneStatesSettingsProceduresModule implements ARDeviceControllerListener{
 
     private SkyControllerExtensionModule mSKEModule;
@@ -618,8 +635,6 @@ public class DroneStatesSettingsProceduresModule implements ARDeviceControllerLi
             return true;
         }
     };
-
-
 
 
     // The listener part. Get callback from the drone

@@ -28,7 +28,19 @@ import ch.epfl.droneproject.DroneApplication;
 import ch.epfl.droneproject.view.BebopVideoView;
 import ch.epfl.droneproject.view.OpenCVView;
 
-
+/**
+ * AutoPilotModule.java
+ * @author blchatel
+ * Autopilot for a Bebop 2 Drone of parrot. This Autopilot can be engaged or disengaged. It deal with:
+ * @see FlightPlanerModule: Mavlink flight plan  and with Iterative procedural Mission
+ * @see DroneStatesSettingsProceduresModule.Mission: Iterative procedural Mission and
+ * @see SkyControllerExtensionModule: can also send directly order to the drone
+ *
+ * This file contains some private classes:
+ * @see ColorBlobDetector
+ * @see FaceDetector
+ * @see OpenCVThread
+ */
 public class AutoPilotModule {
 
     private static final String TAG = "AutoPilot";
@@ -52,23 +64,52 @@ public class AutoPilotModule {
     private OpenCVThread openCVThread;
 
 
+    /**
+     * Default Constructor
+     * @param skeModule (SkyControllerExtensionModule)
+     */
     public AutoPilotModule(SkyControllerExtensionModule skeModule) {
 
         this.isEngaged = false;
         this.isInFlightPlan = false;
+        this.isInMission = false;
 
         this.mSKEModule = skeModule;
         this.mFlightPlanerModule = new FlightPlanerModule();
-
         this.droneSettings = new DroneStatesSettingsProceduresModule(skeModule, this);
-
         this.openCVThread = null;
     }
 
+    /**
+     * Getter for the current state of the autopilot
+     * @return (boolean): true if the autopilot is engaged, and false otherwise
+     */
     public boolean isEngaged(){
         return this.isEngaged;
     }
 
+    /**
+     * Getter for droneSettings
+     * @return droneSettings (DroneStatesSettingsProceduresModule): the drone settings
+     */
+    public DroneStatesSettingsProceduresModule getDroneSettings() {
+        return droneSettings;
+    }
+
+    /**
+     * Getter for the flight planner
+     * @return mFlightPlanerModule (FlightPlanerModule): the flight planner
+     */
+    public FlightPlanerModule getFlightPlanerModule() {
+        return mFlightPlanerModule;
+    }
+
+    /**
+     * Engage the autopilot by giving full control to the application (i.e SkyController2 loose control)
+     * This method put a "listener" on SkyController axis (using grabAxis) to allow automatic disengage
+     * of the autopilot on new axis input (i.e. the operator can get back the controls at any time)
+     * If the drone is in Mission or in FlightPlan, the engage start/continue it/them.
+     */
     public void engage(){
         this.isEngaged = true;
         mSKEModule.setController(ARCOMMANDS_SKYCONTROLLER_COPILOTING_SETPILOTINGSOURCE_SOURCE_ENUM.ARCOMMANDS_SKYCONTROLLER_COPILOTING_SETPILOTINGSOURCE_SOURCE_CONTROLLER);
@@ -76,7 +117,7 @@ public class AutoPilotModule {
         b1 = b1 | (1 << 1);
         b1 = b1 | (1 << 2);
         b1 = b1 | (1 << 3);
-        mSKEModule.grabAxis(0, b1);
+        mSKEModule.grabAxis(b1);
         if(this.isInFlightPlan){
             startAutoFlightPlan(); // continue the flight plan
         }
@@ -85,10 +126,15 @@ public class AutoPilotModule {
         }
     }
 
+    /**
+     * Disengage the autopilot by giving back full control to the operator (i.e. SkyController2 has full control)
+     * This method remove the listener on the axis @see engage
+     * If the drone is in FlightPlan or Mission, this disengage pause it/them
+     */
     public void disengage(){
         this.isEngaged = false;
         mSKEModule.setController(ARCOMMANDS_SKYCONTROLLER_COPILOTING_SETPILOTINGSOURCE_SOURCE_ENUM.ARCOMMANDS_SKYCONTROLLER_COPILOTING_SETPILOTINGSOURCE_SOURCE_SKYCONTROLLER);
-        mSKEModule.grabAxis(0, 0);
+        mSKEModule.grabAxis(0);
         if(this.isInFlightPlan){
             pauseAutoFlightPlan();
         }
@@ -98,8 +144,10 @@ public class AutoPilotModule {
     }
 
     /**
-     * Starts or continues the Drone mission.
-     * See the DroneStatesSettingsProceduresModule constructor to define which mission to start
+     * Starts or continues the current Drone mission.
+     * @see DroneStatesSettingsProceduresModule to know which mission to start (current one)
+     * We can also use startHappy(), startAngry(), startUnknown() or startPart1() to start specific
+     * mission
      */
     public void startMission(){
         if(this.isEngaged) {
@@ -123,64 +171,133 @@ public class AutoPilotModule {
         isInMission = false;
     }
 
-
-    public void becomeCloser(){
-        if(this.isEngaged) {
-            this.droneSettings.getCloserTo();
-        }
-    }
-    public void stopBecomeCloser(){
-        //if(this.isEngaged) {
-            this.droneSettings.stopGetCloserTo();
-        //}
-    }
-
-    public DroneStatesSettingsProceduresModule getDroneSettings() {
-        return droneSettings;
-    }
-
-    public FlightPlanerModule getFlightPlanerModule() {
-        return mFlightPlanerModule;
-    }
+    /**
+     * Starts or continues the current Drone flight plan (i.e. Plan open in the flight planner).
+     */
     public void startAutoFlightPlan(){
         if(this.isEngaged) {
             this.isInFlightPlan = true;
             this.mSKEModule.startFlightPlan(mFlightPlanerModule);
         }
     }
-    public void pauseAutoFlightPlan(){  this.mSKEModule.pauseFlightPlan();}
-    public void stopAutoFlightPlan(){
-        endFlightPlan();
-        this.mSKEModule.stopFlightPlan();
+
+    /**
+     * Pause the current drone flight plan if drone was in flight plan
+     */
+    public void pauseAutoFlightPlan(){
+        if(this.isInFlightPlan) {
+            this.mSKEModule.pauseFlightPlan();
+        }
     }
+
+    /**
+     * Definitely stop the current drone flight plan.
+     */
+    public void stopAutoFlightPlan(){
+
+        if(this.isInFlightPlan) {
+            endFlightPlan();
+            this.mSKEModule.stopFlightPlan();
+        }
+    }
+
+    /**
+     * Indicate the drone is not in flight plan.
+     * Note it Has no effect if the drone was not in flight plan
+     */
     void endFlightPlan() {
         isInFlightPlan = false;
     }
 
 
+    /**
+     * If the autopilot is engage, ask the drone to get closer to the subject
+     */
+    public void getCloserTo(){
+        if(this.isEngaged) {
+            this.droneSettings.getCloserTo();
+        }
+    }
+
+    /**
+     * Ask the drone stop getting closer to the subject by canceling the get closer order
+     * TODO define if the isEngaged test is needed or not. Assume not for now
+     */
+    public void stopGetCloserTo(){
+        //if(this.isEngaged) {
+        this.droneSettings.stopGetCloserTo();
+        //}
+    }
+
+
+    /**
+     * Camera Settings initialization: triggered once on init.
+     * @see DroneStatesSettingsProceduresModule
+     * @param fov (float): Value of the camera horizontal fov (in degree)
+     * @param panMax (float): Value of max pan (right pan) (in degree)
+     * @param panMin (float): Value of min pan (left pan) (in degree)
+     * @param tiltMax (float): Value of max tilt (top tilt) (in degree)
+     * @param tiltMin (float): Value of min tilt (bottom tilt) (in degree)
+     */
     public void setCameraInfo(final float fov, final float panMin, final float panMax, final float tiltMin, final float tiltMax){
         droneSettings.setCameraSettings(fov, panMin, panMax, tiltMin, tiltMax);
     }
 
+    /**
+     * Camera orientation with float arguments.
+     * @see DroneStatesSettingsProceduresModule
+     * @param tilt (float): Tilt camera consign for the drone [deg]
+     * @param pan (float): Pan camera consign for the drone [deg]
+     */
     public void setCameraSettings(float tilt, float pan){
         droneSettings.setCameraSettings(tilt, pan);
     }
 
+    /**
+     * Update the angle states of the drone. Triggered when the drone's attitude change
+     * and also update the drone on the map TODO understand why the drone is not updated correctly
+     * @see DroneStatesSettingsProceduresModule
+     * @param roll (float): in radian
+     * @param pitch (float): in radian
+     * @param yaw (float): : in radian
+     */
     public void updateDroneSettings(float roll, float pitch, float yaw){
         droneSettings.update(roll, pitch, yaw);
         mFlightPlanerModule.updateDroneOrientation(yaw);
     }
+
+    /**
+     * Update the 3D state of the drones
+     * and also update the drone on the map TODO understand why the drone is not updated correctly
+     * @see DroneStatesSettingsProceduresModule
+     * @param lat (double): Latitude value
+     * @param lon (double): Longitude value
+     * @param alt (double): Altitude value
+     */
     public void updateDroneSettings(double lat, double lon, double alt){
         droneSettings.update(lat, lon, alt);
         mFlightPlanerModule.updateDronePosition(lat, lon, alt);
     }
 
-    // Threads
+
+    // Threads and detectors
+
+
+    /**
+     * Create a OpenCv Thread and start it
+     * @see OpenCVThread
+     * @param videoView (BebopVideoView): the bebop stream layer
+     * @param cvView (OpenCVView): the opencv layer
+     */
     public void resumeThreads(BebopVideoView videoView, OpenCVView cvView) {
         openCVThread = new OpenCVThread(videoView, cvView);
         openCVThread.start();
     }
 
+    /**
+     * Pause the thread started in resumeThreads()
+     * If openCVThread is not null, interrupt it
+     */
     public void pauseThreads() {
 
         if(openCVThread != null) {
@@ -193,66 +310,14 @@ public class AutoPilotModule {
         }
     }
 
-
-
-    private class FaceDetector{
-
-        private opencv_objdetect.CvHaarClassifierCascade classifier;
-        private List<CvRect> mContours;
-        IplImage grayImage;
-
-        CvMemStorage storage;
-
-        FaceDetector(int width, int height) {
-            this.mContours = new ArrayList<>();
-
-            try {
-                // Load the classifier file from Java resources.
-                File classifierFile = Loader.extractResource(getClass(),
-                        "/res/raw/haarcascade_frontalface_alt_old.xml",
-                        DroneApplication.getApplication().getContext().getCacheDir(), "classifier", ".xml");
-                classifierFile.deleteOnExit();
-                if (classifierFile.length() <= 0) {
-                    throw new IOException("Could not extract the classifier file from Java resource.");
-                }
-                Log.i(TAG, classifierFile.getAbsolutePath());
-
-                classifier = new opencv_objdetect.CvHaarClassifierCascade(cvLoad(classifierFile.getAbsolutePath()));
-                if (classifier.isNull()) {
-                    throw new IOException("Could not load the classifier file.");
-                }
-                grayImage = IplImage.create(width, height, IPL_DEPTH_8U, 1);
-                // Objects allocated with a create*() or clone() factory method are automatically released
-                // by the garbage collector, but may still be explicitly released by calling release().
-                // You shall NOT call cvReleaseImage(), cvReleaseMemStorage(), etc. on objects allocated this way.
-                storage = CvMemStorage.create();
-
-            } catch (IOException e) {
-                e.printStackTrace();
-                Log.e(TAG, "Failed to load cascade. Exception thrown: " + e);
-            }
-        }
-
-        void destroy(){
-            cvReleaseImage(grayImage);
-        }
-
-        void process(IplImage rgbaImage) {
-            // Let's try to detect some faces! but we need a grayscale image...
-            cvCvtColor(rgbaImage, grayImage, COLOR_RGB2GRAY);
-            CvSeq faces = cvHaarDetectObjects(grayImage, classifier, storage,1.1, 3, CV_HAAR_FIND_BIGGEST_OBJECT | CV_HAAR_DO_ROUGH_SEARCH);
-            int total = faces.total();
-            mContours.clear();
-            for (int i = 0; i < total; i++) {
-                mContours.add(new CvRect(cvGetSeqElem(faces, i)));
-            }
-        }
-        List<CvRect> getContours() {
-            return mContours;
-        }
-    }
-
-
+    /**
+     * Color Blob Detector Class
+     * Each time process is called with an input frame, this class compute a new list of CvRect
+     * containing the detected blobs.
+     * Use constructor to create a color blob detector, process to compute the list of blobs, getContour
+     * to access the computed blobs and destroy once you does not need the class any more.
+     * The Color is in HSV format and can be set using setHsvColor
+     */
     private class ColorBlobDetector {
 
         // Color radius for range checking in HSV color space
@@ -356,7 +421,82 @@ public class AutoPilotModule {
         }
     }
 
+    /**
+     * Face Detector Class
+     * Each time process is called with an input frame, this class compute a new list of CvRect
+     * containing the detected face.
+     * Use constructor to create a face detector, process to compute the list of faces, getContour
+     * to access the computed faces and destroy once you does not need the class any more
+     * assume the file /res/raw/haarcascade_frontalface_alt_old.xml exists in the application apk
+     * Note FaceDetector of java cv is not compatible with the new format of cascade files.
+     */
+    private class FaceDetector{
 
+        private opencv_objdetect.CvHaarClassifierCascade classifier;
+        private List<CvRect> mContours;
+        IplImage grayImage;
+
+        CvMemStorage storage;
+
+        FaceDetector(int width, int height) {
+            this.mContours = new ArrayList<>();
+
+            try {
+                // Load the classifier file from Java resources.
+                File classifierFile = Loader.extractResource(getClass(),
+                        "/res/raw/haarcascade_frontalface_alt_old.xml",
+                        DroneApplication.getApplication().getContext().getCacheDir(), "classifier", ".xml");
+                classifierFile.deleteOnExit();
+                if (classifierFile.length() <= 0) {
+                    throw new IOException("Could not extract the classifier file from Java resource.");
+                }
+                Log.i(TAG, classifierFile.getAbsolutePath());
+
+                classifier = new opencv_objdetect.CvHaarClassifierCascade(cvLoad(classifierFile.getAbsolutePath()));
+                if (classifier.isNull()) {
+                    throw new IOException("Could not load the classifier file.");
+                }
+                grayImage = IplImage.create(width, height, IPL_DEPTH_8U, 1);
+                // Objects allocated with a create*() or clone() factory method are automatically released
+                // by the garbage collector, but may still be explicitly released by calling release().
+                // You shall NOT call cvReleaseImage(), cvReleaseMemStorage(), etc. on objects allocated this way.
+                storage = CvMemStorage.create();
+
+            } catch (IOException e) {
+                e.printStackTrace();
+                Log.e(TAG, "Failed to load cascade. Exception thrown: " + e);
+            }
+        }
+
+        void destroy(){
+            cvReleaseImage(grayImage);
+        }
+
+        void process(IplImage rgbaImage) {
+            // Let's try to detect some faces! but we need a grayscale image...
+            cvCvtColor(rgbaImage, grayImage, COLOR_RGB2GRAY);
+            CvSeq faces = cvHaarDetectObjects(grayImage, classifier, storage,1.1, 3, CV_HAAR_FIND_BIGGEST_OBJECT | CV_HAAR_DO_ROUGH_SEARCH);
+            int total = faces.total();
+            mContours.clear();
+            for (int i = 0; i < total; i++) {
+                mContours.add(new CvRect(cvGetSeqElem(faces, i)));
+            }
+        }
+        List<CvRect> getContours() {
+            return mContours;
+        }
+    }
+
+    /**
+     * OpenCv Thread class
+     * Run a Computer vision thread while not interrupted.
+     * I.e grab each frame streamed by the drone and compute CV algorithms on it. The thread is here
+     * to influence the drone behavior by updating periodically its states or by giving it order directly
+     *
+     * @see ColorBlobDetector: The blob detection detect the closest blob of a touched point on screen
+     * @see FaceDetector: Once the blob is big enough, try to detect face
+     * @see AutoFaceRecognizer which from detected faces tries to recognize face using eigen faces
+     */
     private class OpenCVThread extends Thread implements View.OnTouchListener{
 
         private static final double AREA_THRESHOLD = 0.01;
@@ -390,6 +530,7 @@ public class AutoPilotModule {
 
             ctx = cvView.getContext();
 
+            // Load libraries needed
             System.loadLibrary("opencv_core");
             System.loadLibrary("opencv_imgproc");
             System.loadLibrary("jniopencv_core");
@@ -447,9 +588,11 @@ public class AutoPilotModule {
             return (a.x()-b.x())*(a.x()-b.x()) + (a.y()-b.y())*(a.y()-b.y());
         }
 
+
         @SuppressLint("ClickableViewAccessibility")
         @Override
         public boolean onTouch(View view, MotionEvent event) {
+
 
             if(!mIsReady){
                 return false;
@@ -642,7 +785,7 @@ public class AutoPilotModule {
                                 mText = "";
                             }
 
-                            // TODO ! 
+                            // TODO !
 
 
                         }

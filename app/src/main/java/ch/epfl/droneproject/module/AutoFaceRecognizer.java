@@ -24,30 +24,51 @@ import static org.bytedeco.javacpp.opencv_imgproc.cvCvtColor;
 import static org.bytedeco.javacpp.opencv_imgproc.cvEqualizeHist;
 import static org.bytedeco.javacpp.opencv_imgproc.cvResize;
 
-
+/**
+ * AutoFaceRecognizer.java
+ * @author blchatel
+ *
+ * Use Eigen faces algorithm to recognize subject from a color images.
+ * http://www.shervinemami.info/faceRecognition.html
+ * @see org.bytedeco.javacpp.opencv_face
+ *
+ * The class use a model saved on the phone at /Training/eigenFaces.yml (about 50Mo for 150 images or 3 faces)
+ * The class will train the model if the yml file doesn't exists. It assume images are in /Training/ folder and
+ * follow the rules:
+ *  - Images are in jpg, pgm or png format
+ *  - Images are TRAINING_WIDTH x TRAINING_HEIGHT resolution
+ *  - the name is X_label_NN.[pgm|jpg|png] where:
+ *      - X is the subject number (1-9)
+ *      - label is for example the subject name (without special char)
+ *      - NN is the training picture number for subject X (1 to 99)
+ *
+ * If the model exists the class will load it (about 10 sec)
+ */
 public class AutoFaceRecognizer {
 
-    /** the logger */
+    // Contants
     private static final String TAG = "AutoFaceRecognizer";
     private static final String MODEL_FILE_PATH = "eigenFaces.yml";
     private static final String TRAINING_FOLDER_PATH = "/Training/";
     private static final int TRAINING_WIDTH = 120;
     private static final int TRAINING_HEIGHT = 90;
 
-    private final String EXTERNAL_DIRECTORY;
+    private final String EXTERNAL_DIRECTORY; // computed in constructor
+
     private FaceRecognizer faceRecognizer;
 
+    // Useful variable
     private Mat labelsMat;
     private ArrayMap<Integer, String> labelNamesList;
     private MatVector images;
-
     private IplImage grayIpl;
-
 
     private boolean isTrained;
 
 
-    /** Constructs a new FaceRecognition instance. */
+    /**
+     * Default AutoFaceRecognizer constructor
+     */
     AutoFaceRecognizer() {
 
         EXTERNAL_DIRECTORY = Environment.getExternalStorageDirectory().toString().concat(TRAINING_FOLDER_PATH);
@@ -70,6 +91,17 @@ public class AutoFaceRecognizer {
         }
     }
 
+    /**
+     * If the model is trained this class try to recognize the face given in the rgbaImage
+     * To test an image, it must be of the same size as the trained one. So we need to
+     *  - convert it in gray
+     *  - equalize the level
+     *  - Resize the image in a TRAINING_WIDTH x TRAINING_HEIGHT resolution
+     * @param rgbaImage (IplImage): The input rgba image. It contains a single face to recognize an has w x h resolution
+     * @param w (int): width of the rgbaImage
+     * @param h (int): height of the rgbaImage
+     * @return (String) the label of the recognized person TODO decide if it is the better to do !
+     */
     public String process(IplImage rgbaImage, int w, int h){
         if(isTrained) {
 
@@ -93,11 +125,12 @@ public class AutoFaceRecognizer {
             Mat matImage = new Mat(grayIpl);
             IntPointer l = new IntPointer(1);
             DoublePointer c = new DoublePointer(1);
+
             faceRecognizer.predict(matImage, l, c);
+
             int label = l.get(0);
             double confidence = c.get(0);
             String labelInfo = faceRecognizer.getLabelInfo(label).getString();
-            //Log.e(TAG, "Predicted label: " + labelInfo + ", confidence: " + confidence);
             Log.e(TAG, "Predicted label: " + label+ " - "+labelInfo + ", confidence: " + confidence);
             return labelInfo;
         }
@@ -105,6 +138,10 @@ public class AutoFaceRecognizer {
     }
 
 
+    /**
+     * Load all X_label_NN.[jpg|pgm|png] images in the EXTERNAL_DIRECTORY
+     * and store them by X value
+     */
     private void loadTrainingImages() {
         Log.i(TAG, "Load Training Images");
 
@@ -162,6 +199,9 @@ public class AutoFaceRecognizer {
         }
     }
 
+    /**
+     * Train the model on the loaded images and save the model for next start
+     */
     private void train(){
         Log.i(TAG, "Train if no null");
         if(faceRecognizer != null && images != null && labelsMat != null) {

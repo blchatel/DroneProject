@@ -11,6 +11,14 @@ import ch.epfl.droneproject.DroneApplication;
 import ch.epfl.droneproject.drone.ConfigDrone;
 
 
+/**
+ * SkyControllerExtensionModule.java
+ * @author blchatel
+ *
+ * The class is an interface between my application and the Parrot SDK. It allow to send any command
+ * to the drone. It is working as an extension for the SkyController2
+ * @see ch.epfl.droneproject.drone.SkyControllerDrone
+ */
 public class SkyControllerExtensionModule {
 
     private Context mContext;
@@ -74,6 +82,10 @@ public class SkyControllerExtensionModule {
     }
 
 
+    /**
+     * Indicate to the drone what is its source of controls (i.e. the SkyController2 or the Smartphone)
+     * @param source (ARCOMMANDS_SKYCONTROLLER_COPILOTING_SETPILOTINGSOURCE_SOURCE_ENUM)
+     */
     public void setController(ARCOMMANDS_SKYCONTROLLER_COPILOTING_SETPILOTINGSOURCE_SOURCE_ENUM source){
         if ((mDeviceController != null) &&
                 (mDeviceController.getExtensionState().equals(ARCONTROLLER_DEVICE_STATE_ENUM.ARCONTROLLER_DEVICE_STATE_RUNNING))) {
@@ -82,11 +94,17 @@ public class SkyControllerExtensionModule {
     }
 
 
-    public void grabAxis(int buttons, int axis){
+    /**
+     * Grab axis and button following a binary coding (each button/axis is represented by a bit which
+     * is 1 if we need to grab it and 0 otherwise). Then convert the code into integer
+     * @param axis (int): Axis to grab
+     * Because we grab axis, assume button is always 0.
+     */
+    public void grabAxis(int axis){
 
         if ((mDeviceController != null) &&
                 (mDeviceController.getExtensionState().equals(ARCONTROLLER_DEVICE_STATE_ENUM.ARCONTROLLER_DEVICE_STATE_RUNNING))) {
-            mDeviceController.getFeatureMapper().sendGrab(buttons, axis);
+            mDeviceController.getFeatureMapper().sendGrab(0, axis);
         }
     }
 
@@ -290,6 +308,21 @@ public class SkyControllerExtensionModule {
 
     }
 
+    /**
+     * Start a mavlink flight plan by first transmitting the file to the drone
+     * assume the Smartphone and the Skycontroller2 connected to the drone WiFi
+     * Requirements are:
+     * - Product is calibrated
+     * - Product should be in outdoor mode
+     * - Product has fixed its GPS
+     * @param fpm (FlightPlanerModule)
+     *
+     * Result:
+     * If the FlightPlan has been started, event FlightPlanPlayingStateChanged is triggered with param
+     * state set to playing.
+     * Otherwise, event FlightPlanPlayingStateChanged is triggered with param state set to stopped and
+     * event MavlinkPlayErrorStateChanged is triggered with an explanation of the error.
+     */
     public void startFlightPlan(FlightPlanerModule fpm){
 
         DroneApplication.getApplication().getConsoleMessage().pushMessage(mDeviceController.toString());
@@ -302,6 +335,16 @@ public class SkyControllerExtensionModule {
         }
     }
 
+    /**
+     * Pause the current flight plan
+     * assume the Smartphone and the Skycontroller2 connected to the drone WiFi
+     * To unpause a FlightPlan, see StartFlightPlan
+     *
+     * Result:
+     * The currently playing FlightPlan will be paused. Then, event FlightPlanPlayingStateChanged is
+     * triggered with param state set to the current state of the FlightPlan
+     * (should be paused if everything went well).
+     */
     public void pauseFlightPlan(){
         if ((mDeviceController != null) &&
                 (mDeviceController.getExtensionState().equals(ARCONTROLLER_DEVICE_STATE_ENUM.ARCONTROLLER_DEVICE_STATE_RUNNING))) {
@@ -309,6 +352,14 @@ public class SkyControllerExtensionModule {
         }
     }
 
+    /**
+     * Definitely stop the current flight plan
+     * assume the Smartphone and the Skycontroller2 connected to the drone WiFi
+     *
+     * Result:
+     * The currently playing FlightPlan will be stopped. Then, event FlightPlanPlayingStateChanged is
+     * triggered with param state set to the current state of the FlightPlan (should be stopped if everything went well).
+     */
     public void stopFlightPlan(){
         if ((mDeviceController != null) &&
                 (mDeviceController.getExtensionState().equals(ARCONTROLLER_DEVICE_STATE_ENUM.ARCONTROLLER_DEVICE_STATE_RUNNING))) {
@@ -360,5 +411,4 @@ public class SkyControllerExtensionModule {
             mDeviceController.getFeatureARDrone3().sendCameraVelocity(tilt, pan);
         }
     }
-
 }

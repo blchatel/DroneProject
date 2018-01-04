@@ -178,7 +178,7 @@ public class SkyControllerActivity extends AppCompatActivity {
                     case MotionEvent.ACTION_DOWN:
                         if(valid) {
                             v.setPressed(true);
-                            mSkyControllerDrone.autoPilotModule().becomeCloser();
+                            mSkyControllerDrone.autoPilotModule().getCloserTo();
                         }
                         break;
 
@@ -186,7 +186,7 @@ public class SkyControllerActivity extends AppCompatActivity {
 
                         if(valid) {
                             v.setPressed(false);
-                            mSkyControllerDrone.autoPilotModule().stopBecomeCloser();
+                            mSkyControllerDrone.autoPilotModule().stopGetCloserTo();
                         }
                         break;
 

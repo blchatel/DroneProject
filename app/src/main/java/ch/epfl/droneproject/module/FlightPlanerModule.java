@@ -35,6 +35,14 @@ import java.util.Calendar;
 import ch.epfl.droneproject.DroneApplication;
 import ch.epfl.droneproject.R;
 
+/**
+ * FlightPlanerModule.java
+ * @author blchatel
+ *
+ * This class provide private classes:
+ * @see MavLinkFlightPlanUtilities which is useful to create a Mavlink file
+ * @see Fix which represent a 4D point on a map (latitude, longitude, altitude and orientation)
+ */
 public class FlightPlanerModule {
 
     private int mLastPassedFix;
@@ -147,7 +155,7 @@ public class FlightPlanerModule {
      * @param lon (double): new longitude [degree]
      * @param alt (double): new altitude [m]
      */
-    public void updateDronePosition(double lat, double lon, double alt){
+    void updateDronePosition(double lat, double lon, double alt){
         mCurrentDronePosition.lat = lat;
         mCurrentDronePosition.lon = lon;
         mCurrentDronePosition.alt = alt;
@@ -158,7 +166,7 @@ public class FlightPlanerModule {
      * Update Current drone orientation
      * @param yaw (double): new yaw angle [degree]
      */
-    public void updateDroneOrientation(double yaw){
+    void updateDroneOrientation(double yaw){
         mCurrentDronePosition.yaw = yaw;
     }
 
@@ -247,8 +255,9 @@ public class FlightPlanerModule {
         return fixList.size();
     }
 
+
     /**
-     *
+     * Fix class which represent a 4D point on a map (latitude, longitude, altitude and orientation)
      */
     @SuppressWarnings("WeakerAccess")
     public class Fix{
@@ -263,6 +272,7 @@ public class FlightPlanerModule {
         double alt;
         double yaw;
 
+        // Not used for now
         //private boolean isTakeOff;
         //private boolean isLanding;
 
@@ -306,7 +316,9 @@ public class FlightPlanerModule {
     }
 
     /**
-     *
+     * Mavlink flight plan utilities, useful for creation of a mavlink file and
+     * transmit it to the drone. It assume the phone is connected to the drone wifi for sending the
+     * plan
      */
     @SuppressWarnings("WeakerAccess")
     public class MavLinkFlightPlanUtilities{
@@ -370,13 +382,16 @@ public class FlightPlanerModule {
                 for(int i = 0; i < mFpm.fixList.size(); i++){
                     addMissionFix(generator, mFpm.fixList.get(i));
                 }
+
                 /*
+                // Example:
                 generator.addMissionItem(ARMavlinkMissionItem.CreateMavlinkDelay(10));
                 generator.addMissionItem(ARMavlinkMissionItem.CreateMavlinkTakeoffMissionItem((float)35.1,(float)-101.595, 10,(float)1.5, 0));
                 generator.addMissionItem(ARMavlinkMissionItem.CreateMavlinkNavWaypointMissionItem((float)35.0093, (float)-101.595,(float)1.5, 0));
                 generator.addMissionItem(ARMavlinkMissionItem.CreateMavlinkNavWaypointMissionItem((float)35.0097,(float)-101.592,(float)1.5, 0));
                 generator.addMissionItem(ARMavlinkMissionItem.CreateMavlinkLandMissionItem((float)35.1,(float)-101.500, 0, 0));
                 */
+
                 // direct to external directory
                 String externalDirectory = Environment.getExternalStorageDirectory().toString().concat(MAVLINK_FOLDER_NAME);
 
