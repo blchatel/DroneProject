@@ -62,3 +62,5 @@ freeline_project_description.json
 app/src/main/java/ch/epfl/droneproject/activity/BebopActivity.java
 app/src/main/java/ch/epfl/droneproject/drone/BebopDrone.java
 app/src/main/res/layout/activity_bebop.xml
+app/src/main/java/ch/epfl/droneproject/audio/AudioPlayer.java
+app/src/main/java/ch/epfl/droneproject/audio/AudioRecorder.java
