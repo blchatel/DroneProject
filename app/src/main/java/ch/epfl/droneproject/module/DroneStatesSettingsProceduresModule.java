@@ -3,6 +3,7 @@ package ch.epfl.droneproject.module;
 
 import android.os.Handler;
 
+import com.parrot.arsdk.arcommands.ARCOMMANDS_ARDRONE3_ANIMATIONS_FLIP_DIRECTION_ENUM;
 import com.parrot.arsdk.arcommands.ARCOMMANDS_ARDRONE3_PILOTINGSTATE_FLYINGSTATECHANGED_STATE_ENUM;
 import com.parrot.arsdk.arcommands.ARCOMMANDS_COMMON_MAVLINKSTATE_MAVLINKFILEPLAYINGSTATECHANGED_STATE_ENUM;
 import com.parrot.arsdk.arcontroller.ARCONTROLLER_DEVICE_STATE_ENUM;
@@ -242,10 +243,34 @@ public class DroneStatesSettingsProceduresModule implements ARDeviceControllerLi
         return true;
     }
 
+    /**
+     * Move by the Drone by dx, dy, dz using moveBy
+     * @param dx (float)
+     * @param dy (float)
+     * @param dz (float)
+     * @return true (boolean)
+     */
+    boolean moveBy(float dx, float dy, float dz){
+        mSKEModule.moveBy(dx, dy, dz, 0);
+        return true;
+    }
+
+
+    /**
+     * Make the drone a left flip in the indicated direction. if it has enough battery
+     * and sleep to ensure time for the flip. (i.e. flip has no end event in used version)
+     * @return true (boolean)
+     */
+    boolean makeALeftFlip(){
+        mSKEModule.makeAFlip(ARCOMMANDS_ARDRONE3_ANIMATIONS_FLIP_DIRECTION_ENUM.ARCOMMANDS_ARDRONE3_ANIMATIONS_FLIP_DIRECTION_LEFT);
+        sleep(2000); // TODO adapt this time maybe
+        return true;
+    }
 
     /**
      * Make the drone get closer to the central point of its vision using moveBy.
      * Use the tilt angle and assume x axis is always oriented with the drone horizontal vision.
+     * Please use this method under human supervision (i.e when a button is pressed)
      * @return true (boolean)
      */
     boolean getCloserTo(){
@@ -601,8 +626,38 @@ public class DroneStatesSettingsProceduresModule implements ARDeviceControllerLi
      */
     private Mission happyMission = new Mission() {
 
+        final int dz = 2; // 2 meters
+
         @Override
         public boolean init(){
+
+            // Climb by dz meter to move from subject
+            procedures.add(new Procedure() {
+                @Override
+                public boolean process() {
+                    waitForMoveByEnd = true;
+                    climbBy(dz);
+                    return true;
+                }
+            });
+
+            // Make the flip (a left)
+            procedures.add(new Procedure() {
+                @Override
+                public boolean process() {
+                    makeALeftFlip();
+                    return true;
+                }
+            });
+
+            // Descend by dz to take back initial position
+            procedures.add(new Procedure() {
+                @Override
+                public boolean process() {
+                    descendBy(dz);
+                    return true;
+                }
+            });
 
             return true;
         }
@@ -615,8 +670,81 @@ public class DroneStatesSettingsProceduresModule implements ARDeviceControllerLi
      */
     private Mission angryMission = new Mission() {
 
+        final float amplitude = 0.3f; // 30 cm
+
         @Override
         public boolean init(){
+
+            procedures.add(new Procedure() {
+                @Override
+                public boolean process() {
+                    waitForMoveByEnd = true;
+                    climbBy(amplitude);
+                    return true;
+                }
+            });
+            procedures.add(new Procedure() {
+                @Override
+                public boolean process() {
+                    waitForMoveByEnd = true;
+                    descendBy(amplitude);
+                    return true;
+                }
+            });
+
+
+            procedures.add(new Procedure() {
+                @Override
+                public boolean process() {
+                    waitForMoveByEnd = true;
+                    climbBy(amplitude);
+                    return true;
+                }
+            });
+            procedures.add(new Procedure() {
+                @Override
+                public boolean process() {
+                    waitForMoveByEnd = true;
+                    descendBy(amplitude);
+                    return true;
+                }
+            });
+
+
+            procedures.add(new Procedure() {
+                @Override
+                public boolean process() {
+                    waitForMoveByEnd = true;
+                    climbBy(amplitude);
+                    return true;
+                }
+            });
+            procedures.add(new Procedure() {
+                @Override
+                public boolean process() {
+                    waitForMoveByEnd = true;
+                    descendBy(amplitude);
+                    return true;
+                }
+            });
+
+
+            procedures.add(new Procedure() {
+                @Override
+                public boolean process() {
+                    waitForMoveByEnd = true;
+                    climbBy(amplitude);
+                    return true;
+                }
+            });
+            procedures.add(new Procedure() {
+                @Override
+                public boolean process() {
+                    waitForMoveByEnd = true;
+                    descendBy(amplitude);
+                    return true;
+                }
+            });
 
             return true;
         }
@@ -629,9 +757,75 @@ public class DroneStatesSettingsProceduresModule implements ARDeviceControllerLi
      */
     private Mission unknownMission = new Mission() {
 
+        final float d = 0.3f; // 30 cm
+
         @Override
         public boolean init(){
 
+            // Y axis
+
+            // Going right
+            procedures.add(new Procedure() {
+                @Override
+                public boolean process() {
+                    waitForMoveByEnd = true;
+                    moveBy(0, d, 0);
+                    return true;
+                }
+            });
+
+            // Going one left
+            procedures.add(new Procedure() {
+                @Override
+                public boolean process() {
+                    waitForMoveByEnd = true;
+                    moveBy(0, -2*d, 0);
+                    return true;
+                }
+            });
+
+            // Back to initial position
+            procedures.add(new Procedure() {
+                @Override
+                public boolean process() {
+                    waitForMoveByEnd = true;
+                    moveBy(0, d, 0);
+                    return true;
+                }
+            });
+
+
+            // Z axis
+
+            // Top
+            procedures.add(new Procedure() {
+                @Override
+                public boolean process() {
+                    waitForMoveByEnd = true;
+                    moveBy(0, 0, d);
+                    return true;
+                }
+            });
+
+            // Bottom
+            procedures.add(new Procedure() {
+                @Override
+                public boolean process() {
+                    waitForMoveByEnd = true;
+                    moveBy(0, 0, -2*d);
+                    return true;
+                }
+            });
+
+            // Back to initial position
+            procedures.add(new Procedure() {
+                @Override
+                public boolean process() {
+                    waitForMoveByEnd = true;
+                    moveBy(0, 0, d);
+                    return true;
+                }
+            });
             return true;
         }
     };
