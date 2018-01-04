@@ -1,6 +1,5 @@
 package ch.epfl.droneproject.activity;
 
-import android.annotation.SuppressLint;
 import android.content.Intent;
 import android.graphics.Color;
 import android.support.v4.app.Fragment;
@@ -35,6 +34,13 @@ import static com.parrot.arsdk.arcommands.ARCOMMANDS_ARDRONE3_PILOTINGSTATE_FLYI
 import static com.parrot.arsdk.arcommands.ARCOMMANDS_ARDRONE3_PILOTINGSTATE_FLYINGSTATECHANGED_STATE_ENUM.ARCOMMANDS_ARDRONE3_PILOTINGSTATE_FLYINGSTATECHANGED_STATE_HOVERING;
 
 
+/**
+ * SkyControllerActivity.java
+ * @author blchatel
+ *
+ * Class from Parrot Samples adapted for the need of this project
+ *
+ */
 public class SkyControllerActivity extends AppCompatActivity {
 
     private static final String TAG = "SkyControllerActivity";
@@ -128,7 +134,6 @@ public class SkyControllerActivity extends AppCompatActivity {
     /**
      * Initialize all the the UI components and set all needed listener
      */
-    @SuppressLint("ClickableViewAccessibility")
     private void initIHM() {
 
         // Init the pager with the two fragment adapter

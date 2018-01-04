@@ -33,7 +33,15 @@ import java.util.Set;
 import ch.epfl.droneproject.R;
 import ch.epfl.droneproject.discovery.DroneDiscoverer;
 
-
+/**
+ * DeviceListActivity.java
+ * @author blchatel
+ *
+ * Class from Parrot Samples adapted for the need of this project
+ *
+ * This class display the list of discovered drone
+ * @see DroneDiscoverer
+ */
 public class DeviceListActivity extends AppCompatActivity{
     public static final String EXTRA_DEVICE_SERVICE = "EXTRA_DEVICE_SERVICE";
 
@@ -92,7 +100,7 @@ public class DeviceListActivity extends AppCompatActivity{
         mDroneDiscoverer = new DroneDiscoverer(this);
 
         // Assign the onRefresh listener of the swipe refresh layout
-        final SwipeRefreshLayout swipeLayout = (SwipeRefreshLayout) findViewById(R.id.swiperefresh);
+        final SwipeRefreshLayout swipeLayout = findViewById(R.id.swiperefresh);
         swipeLayout.setOnRefreshListener(new SwipeRefreshLayout.OnRefreshListener() {
 
             @Override
@@ -103,7 +111,7 @@ public class DeviceListActivity extends AppCompatActivity{
         });
 
         // Assign adapter to ListView and assign an "onItemClick" listener
-        final ListView listView = (ListView) findViewById(R.id.list);
+        final ListView listView = findViewById(R.id.list);
         listView.setAdapter(mAdapter);
         listView.setOnItemClickListener(new AdapterView.OnItemClickListener()
         {
@@ -272,7 +280,8 @@ public class DeviceListActivity extends AppCompatActivity{
             // Can use the product here to setText better
             //ARDISCOVERY_PRODUCT_ENUM product = ARDiscoveryService.getProductFromProductID(service.getProductID());
 
-            holder.text.setText(service.getName() + " on " + service.getNetworkType());
+            String t = service.getName() + " on " + service.getNetworkType();
+            holder.text.setText(t);
 
             return rowView;
         }
