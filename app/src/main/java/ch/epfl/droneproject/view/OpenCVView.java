@@ -22,8 +22,8 @@ import android.view.View;
  */
 public class OpenCVView extends View {
 
-    public final static int FACE_RECT_COLOR = Color.GREEN;
-    public final static int BLOB_RECT_COLOR = Color.RED;
+    public final static int FACE_RECT_COLOR = Color.DKGRAY;
+    public final static int BLOB_RECT_COLOR = Color.LTGRAY;
     private Paint paint;
     private MyCvRect rect;
     private String text;

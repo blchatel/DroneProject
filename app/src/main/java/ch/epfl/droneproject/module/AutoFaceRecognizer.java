@@ -1,5 +1,7 @@
 package ch.epfl.droneproject.module;
 
+
+import android.graphics.Color;
 import android.os.Environment;
 import android.util.ArrayMap;
 import android.util.Log;
@@ -37,14 +39,63 @@ import static org.bytedeco.javacpp.opencv_imgproc.cvResize;
  * follow the rules:
  *  - Images are in jpg, pgm or png format
  *  - Images are TRAINING_WIDTH x TRAINING_HEIGHT resolution
- *  - the name is X_label_NN.[pgm|jpg|png] where:
- *      - X is the subject number (1-9)
+ *  - the name is T_X_label_NN.[pgm|jpg|png] where:
+ *      - T is the subject type: [A]dmin, [F]riend, [E]nemy
+ *      - X is the subject number (0-9)
  *      - label is for example the subject name (without special char)
  *      - NN is the training picture number for subject X (1 to 99)
+ *
+ *      More of that at this step of implementation, the drone recognize:
+ *       - admin if X==0
+ *       - friend if 1<=X<=5 -> 1, 2, 3, 4, 5
+ *       - enemy if X>5 -> 6, 7, 8, 9
+ *
+ *       Another polit
  *
  * If the model exists the class will load it (about 10 sec)
  */
 public class AutoFaceRecognizer {
+
+    // The possible recognized person : ADMIN, FRIEND, ENEMY, UNKNOWN
+    public enum Recognized {
+        ADMIN(1, 'A', "Admin", Color.GREEN),
+        FRIEND(2, 'F', "Friend", Color.BLUE),
+        ENEMY(3, 'E', "Enemy",  Color.RED),
+        UNKNOWN(4, 'U', "Unknown",  Color.BLACK)
+        ;
+
+        private final int id;
+        private final char type;
+        private final int color;
+        private final String text;
+
+        Recognized(final int id, final char type, String text, int color) {
+            this.id = id;
+            this.type = type;
+            this.color = color;
+            this.text = text;
+        }
+
+        public int id(){
+            return id;
+        }
+        public char type() {
+            return type;
+        }
+        public int color(){
+            return color;
+        }
+        public String text(){
+            return text;
+        }
+
+        public boolean equals(Recognized other){
+            if(other != null) {
+                return this.id == other.id;
+            }
+            return false;
+        }
+    }
 
     // Contants
     private static final String TAG = "AutoFaceRecognizer";
@@ -52,6 +103,7 @@ public class AutoFaceRecognizer {
     private static final String TRAINING_FOLDER_PATH = "/Training/";
     private static final int TRAINING_WIDTH = 120;
     private static final int TRAINING_HEIGHT = 90;
+    private static final double CONFIDENCE_THRESHOLD = 4500;
 
     private final String EXTERNAL_DIRECTORY; // computed in constructor
 
@@ -100,9 +152,9 @@ public class AutoFaceRecognizer {
      * @param rgbaImage (IplImage): The input rgba image. It contains a single face to recognize an has w x h resolution
      * @param w (int): width of the rgbaImage
      * @param h (int): height of the rgbaImage
-     * @return (String) the label of the recognized person TODO decide if it is the better to do !
+     * @return (Recognized) the Recognized person
      */
-    public String process(IplImage rgbaImage, int w, int h){
+    public Recognized process(IplImage rgbaImage, int w, int h){
         if(isTrained) {
 
             IplImage inputIpl = cvCreateImage(cvSize(w, h), IPL_DEPTH_8U, 1);
@@ -130,16 +182,32 @@ public class AutoFaceRecognizer {
 
             int label = l.get(0);
             double confidence = c.get(0);
+
             String labelInfo = faceRecognizer.getLabelInfo(label).getString();
+            char type = labelInfo.charAt(0);
+
             Log.e(TAG, "Predicted label: " + label+ " - "+labelInfo + ", confidence: " + confidence);
-            return labelInfo;
+
+
+            if(confidence < CONFIDENCE_THRESHOLD){
+
+                if(type == Recognized.ADMIN.type()){
+                    return Recognized.ADMIN;
+                }
+                else if(type == Recognized.FRIEND.type()){
+                    return Recognized.FRIEND;
+                }
+                else if(type == Recognized.ENEMY.type()){
+                    return Recognized.ENEMY;
+                }
+            }
         }
-        return "";
+        return Recognized.UNKNOWN;
     }
 
 
     /**
-     * Load all X_label_NN.[jpg|pgm|png] images in the EXTERNAL_DIRECTORY
+     * Load all T_X_label_NN.[jpg|pgm|png] images in the EXTERNAL_DIRECTORY
      * and store them by X value
      */
     private void loadTrainingImages() {
@@ -187,10 +255,12 @@ public class AutoFaceRecognizer {
                 Mat img = imread(image.getAbsolutePath(), CV_LOAD_IMAGE_GRAYSCALE);
 
                 String[] ss = image.getName().split("\\_");
-                int label = Integer.parseInt(ss[0]);
-                String name = ss[1];
+                String type = ss[0];
+                int label = Integer.parseInt(ss[1]);
+                String name = ss[2];
 
-                labelNamesList.put(label, name);
+                //labelNamesList.put(label, name);
+                labelNamesList.put(label, type+"+"+name);
                 images.put(counter, img);
 
                 labelsBuf.put(counter, label);

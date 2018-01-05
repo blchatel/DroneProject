@@ -326,7 +326,7 @@ public class DroneStatesSettingsProceduresModule implements ARDeviceControllerLi
      * Start a Mission or continue it if already started
      */
     void startMission(){
-        DroneApplication.getApplication().getConsoleMessage().pushMessage("Start or continue Mission");
+        //DroneApplication.getApplication().getConsoleMessage().pushMessage("Start or continue Mission");
         currentMissionRunning = true;
         currentMission.start();
     }
@@ -341,10 +341,32 @@ public class DroneStatesSettingsProceduresModule implements ARDeviceControllerLi
         currentMission.pause();
     }
 
+
+    /**
+     * Start a sub-mission following the type !
+     * @param type (AutoFaceRecognizer.Recognized): decide which type of mission start
+     */
+    void startMission(AutoFaceRecognizer.Recognized type){
+
+        switch (type){
+            case UNKNOWN:
+                startUnknown();
+                break;
+            case ADMIN:
+            case FRIEND:
+                startHappy();
+                break;
+            case ENEMY:
+                startAngry();
+                break;
+        }
+    }
+
+
     /**
      * Start the Happy Mission if no mission is currently running
      */
-    void startHappy() {
+    private void startHappy() {
         if (!currentMissionRunning){
             currentMission = happyMission;
             currentMission.reset();
@@ -355,7 +377,7 @@ public class DroneStatesSettingsProceduresModule implements ARDeviceControllerLi
     /**
      * Start properly the Angry Mission if no mission is currently running
      */
-    void startAngry(){
+    private void startAngry(){
         if (!currentMissionRunning) {
             currentMission = angryMission;
             currentMission.reset();
@@ -366,7 +388,7 @@ public class DroneStatesSettingsProceduresModule implements ARDeviceControllerLi
     /**
      * Start properly the  Unkonwn Mission if no mission is currently running
      */
-    void startUnknown(){
+    private void startUnknown(){
         if (!currentMissionRunning) {
             currentMission = unknownMission;
             currentMission.reset();
@@ -422,7 +444,7 @@ public class DroneStatesSettingsProceduresModule implements ARDeviceControllerLi
          * @return (boolean)
          */
         boolean start(){
-            DroneApplication.getApplication().getConsoleMessage().pushMessage("Init");
+            //DroneApplication.getApplication().getConsoleMessage().pushMessage("Init");
             pauseMission = false;
             waitForConfigEnd = false; waitForFlyingStateChanged = false; waitForPlayingStateChanged = false; waitForMoveByEnd = false;
 
@@ -580,7 +602,7 @@ public class DroneStatesSettingsProceduresModule implements ARDeviceControllerLi
                 @Override
                 public boolean process() {
                     waitForConfigEnd = true;
-                    mSKEModule.setDroneConfig(ConfigDrone.INDOOR_DRONE_CONFIG);
+                    mSKEModule.setDroneConfig(ConfigDrone.MISSION_DRONE_CONFIG);
                     return true;
                 }
             });

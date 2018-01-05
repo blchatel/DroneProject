@@ -263,9 +263,10 @@ public class SkyControllerActivity extends AppCompatActivity {
                 switch (mSkyControllerDrone.getFlyingState()) {
                     case ARCOMMANDS_ARDRONE3_PILOTINGSTATE_FLYINGSTATECHANGED_STATE_FLYING:
                     case ARCOMMANDS_ARDRONE3_PILOTINGSTATE_FLYINGSTATECHANGED_STATE_HOVERING:
-                        mSkyControllerDrone.skeModule().flatTrim();
-                        mSkyControllerDrone.skeModule().setDroneConfig(ConfigDrone.INDOOR_DRONE_CONFIG);
-                        DroneApplication.getApplication().getConsoleMessage().pushMessage("Flat trim + Config");
+                        //mSkyControllerDrone.skeModule().flatTrim();
+                        mSkyControllerDrone.skeModule().setDroneConfig(ConfigDrone.MISSION_DRONE_CONFIG);
+                        DroneApplication.getApplication().getConsoleMessage().pushMessage("Config");
+                        //DroneApplication.getApplication().getConsoleMessage().pushMessage("Flat trim + Config");
                         break;
                     default:
                         break;

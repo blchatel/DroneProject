@@ -499,9 +499,11 @@ public class AutoPilotModule {
      */
     private class OpenCVThread extends Thread implements View.OnTouchListener{
 
-        private static final double AREA_THRESHOLD = 0.01;
+        private static final double AREA_THRESHOLD = 0.05;
         private static final int MAX_CLICK_DURATION = 200;
+        private static final int RECOGNIZED_TIME = 1500;
         private long startClickTime;
+        private long startRecognizedTime;
 
         private Context ctx;
         private BebopVideoView mVideoView;
@@ -523,7 +525,7 @@ public class AutoPilotModule {
         private Point mFrameCenter, pivotCenter, blobCenter;
         private boolean mIsBlobFound, mIsFaceFound, mSearchBlob, mSearchFace;
         private boolean mIsReady;
-        private String mText;
+        private AutoFaceRecognizer.Recognized mRecognized;
 
 
         private OpenCVThread(BebopVideoView videoView, OpenCVView cvView) {
@@ -595,7 +597,7 @@ public class AutoPilotModule {
 
 
             if(!mIsReady){
-                return false;
+                return true;
             }
 
             switch (event.getAction()) {
@@ -774,20 +776,27 @@ public class AutoPilotModule {
 
                             mSearchFace = mIsFaceFound || blobArea / mFrameArea > AREA_THRESHOLD;
 
-                            if(mSearchFace){
+                            if(mSearchFace) {
                                 // Crop the image to keep the face only
                                 cvSetImageROI(grabbedImage, new CvRect(x1, y1, w, h));
                                 IplImage subIpl = cvCreateImage(cvGetSize(grabbedImage), grabbedImage.depth(), grabbedImage.nChannels());
                                 cvCopy(grabbedImage, subIpl);
-                                mText = mFaceRecognizer.process(subIpl, w, h);
                                 cvResetImageROI(grabbedImage);
+
+                                AutoFaceRecognizer.Recognized tempRec = mFaceRecognizer.process(subIpl, w, h);
+
+                                if (!tempRec.equals(mRecognized)) {
+                                    startRecognizedTime = Calendar.getInstance().getTimeInMillis();
+                                    mRecognized = tempRec;
+                                } else if (Calendar.getInstance().getTimeInMillis() - startRecognizedTime > RECOGNIZED_TIME){
+                                    // The face is recognized and of the same type for a RECOGNIZED_TIME, we can send the mission
+                                    if(isEngaged && !isInFlightPlan && !isInMission) {
+                                        droneSettings.startMission(mRecognized);
+                                    }
+                                }
                             }else{
-                                mText = "";
+                                mRecognized = null;
                             }
-
-                            // TODO !
-
-
                         }
 
                         // If the drone is in flight plan or inMission -> do nothing for not altering the plan or the mission !
@@ -831,8 +840,14 @@ public class AutoPilotModule {
                     runOnUiThread(new Runnable() {
                         @Override
                         public void run() {
-                            mOpenCVView.setColor(mIsBlobFound ? OpenCVView.BLOB_RECT_COLOR : OpenCVView.FACE_RECT_COLOR);
-                            mOpenCVView.setText(mIsBlobFound ? "" : mText);
+
+                            if(mRecognized != null){
+                                mOpenCVView.setColor(mRecognized.color());
+                                mOpenCVView.setText(mRecognized.text());
+                            }
+                            else{
+                                mOpenCVView.setColor(mIsBlobFound ? OpenCVView.BLOB_RECT_COLOR : OpenCVView.FACE_RECT_COLOR);
+                            }
                             mOpenCVView.setRect(x1, y1, x2, y2);
                             mOpenCVView.invalidate();
                         }
