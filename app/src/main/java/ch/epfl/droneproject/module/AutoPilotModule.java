@@ -499,7 +499,7 @@ public class AutoPilotModule {
      */
     private class OpenCVThread extends Thread implements View.OnTouchListener{
 
-        private static final double AREA_THRESHOLD = 0.05;
+        private static final double AREA_THRESHOLD = 0.04;
         private static final int MAX_CLICK_DURATION = 200;
         private static final int RECOGNIZED_TIME = 1500;
         private long startClickTime;
@@ -560,7 +560,7 @@ public class AutoPilotModule {
 
             mFrameArea = cols*rows;
             mFrameCenter = new Point(width/2, height/2);
-            mDistance = Math.min(width, height)/3;
+            mDistance = Math.min(width, height)/4;
             pivotCenter = new Point(0, 0);
             blobCenter = new Point(0, 0);
             mIsBlobFound = false;
@@ -742,8 +742,12 @@ public class AutoPilotModule {
                             mIsBlobFound = contours.size() > 0;
                         }
 
-                        // If no contour ask the user to tap a new color pixel
-                        if(mIsBlobFound || mIsFaceFound){
+                        // If neither blob nor face is found, ask the user to input another blob
+                        if(!(mIsBlobFound || mIsFaceFound)) {
+                            mSearchBlob = false;
+                            mSearchFace = false;
+                        }
+                        else{
                             double d = Double.POSITIVE_INFINITY;
                             int x = 0, y = 0, w = 0, h = 0;
 
@@ -815,11 +819,11 @@ public class AutoPilotModule {
                                 if (deltaX > 0) {
                                     Log.e(TAG, "Correct x right");
                                     //droneSettings.turnRight();
-                                    droneSettings.turnLeft();
+                                    droneSettings.turnSmallLeft();
                                 } else {
                                     Log.e(TAG, "Correct x left");
                                     //droneSettings.turnLeft();
-                                    droneSettings.turnRight();
+                                    droneSettings.turnSmallRight();
                                 }
                             } else {
                                 droneSettings.fixYaw();
@@ -846,6 +850,7 @@ public class AutoPilotModule {
                                 mOpenCVView.setText(mRecognized.text());
                             }
                             else{
+                                mOpenCVView.setText("");
                                 mOpenCVView.setColor(mIsBlobFound ? OpenCVView.BLOB_RECT_COLOR : OpenCVView.FACE_RECT_COLOR);
                             }
                             mOpenCVView.setRect(x1, y1, x2, y2);

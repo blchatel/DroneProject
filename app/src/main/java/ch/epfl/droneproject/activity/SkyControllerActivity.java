@@ -220,7 +220,7 @@ public class SkyControllerActivity extends AppCompatActivity {
                 switch (mSkyControllerDrone.getFlyingState()) {
                     case ARCOMMANDS_ARDRONE3_PILOTINGSTATE_FLYINGSTATECHANGED_STATE_FLYING:
                     case ARCOMMANDS_ARDRONE3_PILOTINGSTATE_FLYINGSTATECHANGED_STATE_HOVERING:
-                        mSkyControllerDrone.skeModule().moveBy(1, 0, 0, 0);
+                        mSkyControllerDrone.skeModule().moveBy(0, 0, 1, 0);
                         break;
                     default:
                 }
@@ -231,7 +231,7 @@ public class SkyControllerActivity extends AppCompatActivity {
                 switch (mSkyControllerDrone.getFlyingState()) {
                     case ARCOMMANDS_ARDRONE3_PILOTINGSTATE_FLYINGSTATECHANGED_STATE_FLYING:
                     case ARCOMMANDS_ARDRONE3_PILOTINGSTATE_FLYINGSTATECHANGED_STATE_HOVERING:
-                        mSkyControllerDrone.skeModule().moveBy(-1, 0, 0, 0);
+                        mSkyControllerDrone.skeModule().moveBy(0, 0, -1, 0);
                         break;
                     default:
                 }

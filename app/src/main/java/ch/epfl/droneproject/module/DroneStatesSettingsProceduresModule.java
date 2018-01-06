@@ -161,6 +161,10 @@ public class DroneStatesSettingsProceduresModule implements ARDeviceControllerLi
         mSKEModule.setYaw((byte) 50);
         return true;
     }
+    boolean turnSmallRight(){
+        mSKEModule.setYaw((byte) 5);
+        return true;
+    }
 
     /**
      * Make the drone turning left by setting yaw rotation to 50% of the min rotation speed
@@ -169,6 +173,10 @@ public class DroneStatesSettingsProceduresModule implements ARDeviceControllerLi
      */
     boolean turnLeft(){
         mSKEModule.setYaw((byte) -50);
+        return true;
+    }
+    boolean turnSmallLeft(){
+        mSKEModule.setYaw((byte) -5);
         return true;
     }
 
@@ -227,7 +235,7 @@ public class DroneStatesSettingsProceduresModule implements ARDeviceControllerLi
      * @return true (boolean)
      */
     boolean climbBy(float dz){
-        mSKEModule.moveBy(0,0, dz, 0);
+        mSKEModule.moveBy(0,0, -dz, 0);
         return true;
     }
 
@@ -239,15 +247,15 @@ public class DroneStatesSettingsProceduresModule implements ARDeviceControllerLi
      * @return true (boolean)
      */
     boolean descendBy(float dz){
-        mSKEModule.moveBy(0,0, -dz, 0);
+        mSKEModule.moveBy(0,0, dz, 0);
         return true;
     }
 
     /**
      * Move by the Drone by dx, dy, dz using moveBy
-     * @param dx (float)
+     * @param dx (float) front of the drone
      * @param dy (float)
-     * @param dz (float)
+     * @param dz (float) down direction
      * @return true (boolean)
      */
     boolean moveBy(float dx, float dy, float dz){
@@ -276,7 +284,7 @@ public class DroneStatesSettingsProceduresModule implements ARDeviceControllerLi
     boolean getCloserTo(){
         double dTilt = (double)tilt;
         // TODO Check the tilt positive direction
-        mSKEModule.moveBy((float)Math.cos(dTilt),0, (float)Math.sin(dTilt), 0);
+        mSKEModule.moveBy((float)Math.cos(dTilt),0, -(float)Math.sin(dTilt), 0);
         return true;
     }
 
