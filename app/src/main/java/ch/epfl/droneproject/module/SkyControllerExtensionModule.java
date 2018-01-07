@@ -59,7 +59,7 @@ public class SkyControllerExtensionModule {
 
             mDeviceController.getFeatureARDrone3().sendSpeedSettingsHullProtection(config.getHasHullProtection());
 
-            //DroneApplication.getApplication().getConsoleMessage().pushMessage("Config set to "+config.getConfigName());
+            DroneApplication.pushInfoMessage("Config set to "+config.getConfigName());
         }
     }
 
@@ -78,6 +78,7 @@ public class SkyControllerExtensionModule {
                 (mDeviceController.getExtensionState().equals(ARCONTROLLER_DEVICE_STATE_ENUM.ARCONTROLLER_DEVICE_STATE_RUNNING))) {
 
             mDeviceController.getFeatureARDrone3().sendPilotingFlatTrim();
+            DroneApplication.pushInfoMessage("Trim Flat");
         }
     }
 
@@ -241,6 +242,7 @@ public class SkyControllerExtensionModule {
         if ((mDeviceController != null) &&
                 (mDeviceController.getExtensionState().equals(ARCONTROLLER_DEVICE_STATE_ENUM.ARCONTROLLER_DEVICE_STATE_RUNNING))) {
             mDeviceController.getFeatureARDrone3().sendPilotingEmergency();
+            DroneApplication.pushInfoMessage("Emergency");
         }
     }
 
@@ -262,6 +264,7 @@ public class SkyControllerExtensionModule {
         if ((mDeviceController != null) &&
                 (mDeviceController.getExtensionState().equals(ARCONTROLLER_DEVICE_STATE_ENUM.ARCONTROLLER_DEVICE_STATE_RUNNING))) {
             mDeviceController.getFeatureARDrone3().sendPilotingNavigateHome(start);
+            DroneApplication.pushInfoMessage("Go Home");
         }
     }
 
@@ -281,7 +284,6 @@ public class SkyControllerExtensionModule {
      * offsets it managed to do before this new command and the value of error set to interrupted.
      */
     public void moveBy(float dX, float dY, float dZ, float dPsi) {
-        //DroneApplication.getApplication().getConsoleMessage().pushMessage(mDeviceController.toString());
         if ((mDeviceController != null) &&
                 (mDeviceController.getExtensionState().equals(ARCONTROLLER_DEVICE_STATE_ENUM.ARCONTROLLER_DEVICE_STATE_RUNNING))) {
             mDeviceController.getFeatureARDrone3().sendPilotingMoveBy(dX, dY, dZ, dPsi);
@@ -305,7 +307,6 @@ public class SkyControllerExtensionModule {
                 (mDeviceController.getExtensionState().equals(ARCONTROLLER_DEVICE_STATE_ENUM.ARCONTROLLER_DEVICE_STATE_RUNNING))) {
             mDeviceController.getFeatureARDrone3().sendAnimationsFlip(direction);
         }
-
     }
 
     /**
@@ -325,13 +326,10 @@ public class SkyControllerExtensionModule {
      */
     public void startFlightPlan(FlightPlanerModule fpm){
 
-        DroneApplication.getApplication().getConsoleMessage().pushMessage(mDeviceController.toString());
-        DroneApplication.getApplication().getConsoleMessage().pushMessage(mDeviceController.getExtensionState()+" = "+ARCONTROLLER_DEVICE_STATE_ENUM.ARCONTROLLER_DEVICE_STATE_RUNNING);
-
         if ((mDeviceController != null) &&
                 (mDeviceController.getExtensionState().equals(ARCONTROLLER_DEVICE_STATE_ENUM.ARCONTROLLER_DEVICE_STATE_RUNNING))) {
             fpm.getMavlink().transmitMavlinkFile(mDeviceController.getFeatureCommon());
-            DroneApplication.getApplication().getConsoleMessage().pushMessage("Start FPL");
+            DroneApplication.pushInfoMessage("Start FPL");
         }
     }
 
@@ -349,6 +347,7 @@ public class SkyControllerExtensionModule {
         if ((mDeviceController != null) &&
                 (mDeviceController.getExtensionState().equals(ARCONTROLLER_DEVICE_STATE_ENUM.ARCONTROLLER_DEVICE_STATE_RUNNING))) {
             mDeviceController.getFeatureCommon().sendMavlinkPause();
+            DroneApplication.pushInfoMessage("Pause FPL");
         }
     }
 
@@ -364,6 +363,7 @@ public class SkyControllerExtensionModule {
         if ((mDeviceController != null) &&
                 (mDeviceController.getExtensionState().equals(ARCONTROLLER_DEVICE_STATE_ENUM.ARCONTROLLER_DEVICE_STATE_RUNNING))) {
             mDeviceController.getFeatureCommon().sendMavlinkStop();
+            DroneApplication.pushInfoMessage("Stop FPL");
         }
     }
 

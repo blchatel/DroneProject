@@ -26,6 +26,9 @@ import com.parrot.arsdk.ARSDK;
 public class DroneApplication extends Application{
 
     private static DroneApplication DRONE_APPLICATION;
+    private static final boolean INFO = true;
+    private static final boolean ERROR = true;
+    private static final boolean DEBUG = false;
 
     private Context mContext;
     private String mInternalStoragePath;
@@ -52,6 +55,20 @@ public class DroneApplication extends Application{
     public static DroneApplication getApplication(){
         return DRONE_APPLICATION;
     }
+
+    public static void pushInfoMessage(String message){
+        if(INFO)
+            DRONE_APPLICATION.getConsoleMessage().pushMessage(message);
+    }
+    public static void pushDebugMessage(String message){
+        if(DEBUG)
+            DRONE_APPLICATION.getConsoleMessage().pushMessage(message);
+    }
+    public static void pushErrorMessage(String message){
+        if(ERROR)
+            DRONE_APPLICATION.getConsoleMessage().pushMessage(message);
+    }
+
 
     @Override
     public void onCreate() {

@@ -220,7 +220,7 @@ public class SkyControllerActivity extends AppCompatActivity {
                 switch (mSkyControllerDrone.getFlyingState()) {
                     case ARCOMMANDS_ARDRONE3_PILOTINGSTATE_FLYINGSTATECHANGED_STATE_FLYING:
                     case ARCOMMANDS_ARDRONE3_PILOTINGSTATE_FLYINGSTATECHANGED_STATE_HOVERING:
-                        mSkyControllerDrone.skeModule().moveBy(0, 0, 1, 0);
+                        mSkyControllerDrone.skeModule().moveBy(1, 0, 0, 0);
                         break;
                     default:
                 }
@@ -231,7 +231,7 @@ public class SkyControllerActivity extends AppCompatActivity {
                 switch (mSkyControllerDrone.getFlyingState()) {
                     case ARCOMMANDS_ARDRONE3_PILOTINGSTATE_FLYINGSTATECHANGED_STATE_FLYING:
                     case ARCOMMANDS_ARDRONE3_PILOTINGSTATE_FLYINGSTATECHANGED_STATE_HOVERING:
-                        mSkyControllerDrone.skeModule().moveBy(0, 0, -1, 0);
+                        mSkyControllerDrone.skeModule().moveBy(-1, 0, 0, 0);
                         break;
                     default:
                 }
@@ -263,10 +263,8 @@ public class SkyControllerActivity extends AppCompatActivity {
                 switch (mSkyControllerDrone.getFlyingState()) {
                     case ARCOMMANDS_ARDRONE3_PILOTINGSTATE_FLYINGSTATECHANGED_STATE_FLYING:
                     case ARCOMMANDS_ARDRONE3_PILOTINGSTATE_FLYINGSTATECHANGED_STATE_HOVERING:
-                        //mSkyControllerDrone.skeModule().flatTrim();
                         mSkyControllerDrone.skeModule().setDroneConfig(ConfigDrone.MISSION_DRONE_CONFIG);
-                        DroneApplication.getApplication().getConsoleMessage().pushMessage("Config");
-                        //DroneApplication.getApplication().getConsoleMessage().pushMessage("Flat trim + Config");
+                        DroneApplication.pushInfoMessage("Config");
                         break;
                     default:
                         break;
@@ -357,7 +355,7 @@ public class SkyControllerActivity extends AppCompatActivity {
     private final SkyControllerDrone.Listener mSkyControllerListener = new SkyControllerDrone.Listener() {
         @Override
         public void onSkyControllerConnectionChanged(ARCONTROLLER_DEVICE_STATE_ENUM state) {
-            DroneApplication.getApplication().getConsoleMessage().pushMessage("SkyCon State:"+state);
+            DroneApplication.pushInfoMessage("SkyCon State:"+state);
 
             switch (state)
             {
@@ -382,8 +380,7 @@ public class SkyControllerActivity extends AppCompatActivity {
 
         @Override
         public void onDroneConnectionChanged(ARCONTROLLER_DEVICE_STATE_ENUM state) {
-
-            DroneApplication.getApplication().getConsoleMessage().pushMessage("DroneCon State:"+state);
+            DroneApplication.pushInfoMessage("DroneCon State:"+state);
             switch (state)
             {
                 case ARCONTROLLER_DEVICE_STATE_RUNNING:
@@ -407,8 +404,7 @@ public class SkyControllerActivity extends AppCompatActivity {
 
         @Override
         public void onPilotingStateChanged(ARCOMMANDS_ARDRONE3_PILOTINGSTATE_FLYINGSTATECHANGED_STATE_ENUM state) {
-
-            DroneApplication.getApplication().getConsoleMessage().pushMessage("Pilot State:"+state);
+            DroneApplication.pushInfoMessage("Pilot State:"+state);
 
             switch (state) {
                 case ARCOMMANDS_ARDRONE3_PILOTINGSTATE_FLYINGSTATECHANGED_STATE_LANDED:
@@ -438,7 +434,7 @@ public class SkyControllerActivity extends AppCompatActivity {
 
         @Override
         public void onAutoPilotDisengage() {
-            DroneApplication.getApplication().getConsoleMessage().pushMessage("Disengage AP");
+            DroneApplication.pushInfoMessage("Disengage AP");
             mAutoPilotBt.setTextColor(Color.RED);
             mAutoPilotBt.setText(R.string.engageap);
             mAutoPilotBt.setBackgroundResource(R.drawable.emergency_btn);

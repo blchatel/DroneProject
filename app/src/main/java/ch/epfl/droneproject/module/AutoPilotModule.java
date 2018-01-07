@@ -26,6 +26,7 @@ import java.util.List;
 
 import ch.epfl.droneproject.DroneApplication;
 import ch.epfl.droneproject.view.BebopVideoView;
+import ch.epfl.droneproject.view.ConsoleView;
 import ch.epfl.droneproject.view.OpenCVView;
 
 /**
@@ -124,6 +125,7 @@ public class AutoPilotModule {
         if(this.isInMission){
             startMission(); // continue the mission
         }
+        DroneApplication.pushInfoMessage("AutoPilot Engaged");
     }
 
     /**
@@ -289,8 +291,8 @@ public class AutoPilotModule {
      * @param videoView (BebopVideoView): the bebop stream layer
      * @param cvView (OpenCVView): the opencv layer
      */
-    public void resumeThreads(BebopVideoView videoView, OpenCVView cvView) {
-        openCVThread = new OpenCVThread(videoView, cvView);
+    public void resumeThreads(BebopVideoView videoView, OpenCVView cvView, ConsoleView consoleView) {
+        openCVThread = new OpenCVThread(videoView, cvView, consoleView);
         openCVThread.start();
     }
 
@@ -450,7 +452,6 @@ public class AutoPilotModule {
                 if (classifierFile.length() <= 0) {
                     throw new IOException("Could not extract the classifier file from Java resource.");
                 }
-                Log.i(TAG, classifierFile.getAbsolutePath());
 
                 classifier = new opencv_objdetect.CvHaarClassifierCascade(cvLoad(classifierFile.getAbsolutePath()));
                 if (classifier.isNull()) {
@@ -464,6 +465,7 @@ public class AutoPilotModule {
 
             } catch (IOException e) {
                 e.printStackTrace();
+                DroneApplication.pushErrorMessage("Failed to load cascade. Exception thrown: " + e);
                 Log.e(TAG, "Failed to load cascade. Exception thrown: " + e);
             }
         }
@@ -508,6 +510,7 @@ public class AutoPilotModule {
         private Context ctx;
         private BebopVideoView mVideoView;
         private OpenCVView mOpenCVView;
+        private ConsoleView mConsoleVView;
 
         private final Handler handler;
         boolean interrupted;
@@ -528,7 +531,7 @@ public class AutoPilotModule {
         private AutoFaceRecognizer.Recognized mRecognized;
 
 
-        private OpenCVThread(BebopVideoView videoView, OpenCVView cvView) {
+        private OpenCVThread(BebopVideoView videoView, OpenCVView cvView, ConsoleView consoleView) {
 
             ctx = cvView.getContext();
 
@@ -541,6 +544,7 @@ public class AutoPilotModule {
 
             mVideoView = videoView;
             mOpenCVView = cvView;
+            mConsoleVView = consoleView;
 
             handler = new Handler(ctx.getMainLooper());
             interrupted = false;
@@ -550,8 +554,6 @@ public class AutoPilotModule {
         }
 
         private void init(int height, int width){
-
-            Log.e(TAG, "Init("+height+", "+width+")");
 
             rows = height;
             cols = width;
@@ -637,10 +639,11 @@ public class AutoPilotModule {
 
             // Check if ww can calibrate or not
             if(rows == 0 || cols == 0){
+                DroneApplication.pushErrorMessage("Nothing to calibrate on");
                 Log.e(TAG, "Nothing to calibrate on");
                 return;
             }
-            Log.i(TAG, "Calibrate");
+            DroneApplication.pushInfoMessage("Calibrate");
 
             // First create a square representing the touched region. This square is 8x8 pixel
             int halfRegionSide = 4;
@@ -672,7 +675,6 @@ public class AutoPilotModule {
 
             for(int i = 0; i < recW; i++){
                 for(int j = 0; j < recH; j++){
-                    //Log.d(TAG, i+", "+j+", "+idx.get(i, j, 0)+", "+idx.get(i, j, 1)+", "+idx.get(i, j, 2));
                     H += idx.get(i, j, 0);
                     S += idx.get(i, j, 1);
                     V += idx.get(i, j, 2);
@@ -695,14 +697,13 @@ public class AutoPilotModule {
         @Override
         public void run() {
 
-            Log.e(TAG, "RUN");
-
             // Sleep until first bitmap image available :
             // TODO find a better way to not have to wait
             while(mVideoView.getBitmap() == null){
                 try {
                     sleep(50);
                 } catch (InterruptedException e) {
+                    DroneApplication.pushErrorMessage("ERROR while sleeping");
                     Log.e(TAG, "ERROR while sleeping");
                 }
             }
@@ -780,7 +781,7 @@ public class AutoPilotModule {
 
                             mSearchFace = mIsFaceFound || blobArea / mFrameArea > AREA_THRESHOLD;
 
-                            if(mSearchFace) {
+                            if(mSearchFace && mIsFaceFound) {// TODO check the && part but I assume it
                                 // Crop the image to keep the face only
                                 cvSetImageROI(grabbedImage, new CvRect(x1, y1, w, h));
                                 IplImage subIpl = cvCreateImage(cvGetSize(grabbedImage), grabbedImage.depth(), grabbedImage.nChannels());
@@ -811,18 +812,17 @@ public class AutoPilotModule {
 
                             // apply correction
                             if (!mSearchFace) {
-                                Log.e(TAG, "Become closer for better face detection: Press the button on screen");
+                                Log.i(TAG, "Become closer for better face detection: Press the button on screen");
+                                DroneApplication.pushInfoMessage("Become closer for better face detection: Press the button on screen");
                             }
 
                             if (Math.abs(deltaX) > mDistance) {
 
                                 if (deltaX > 0) {
-                                    Log.e(TAG, "Correct x right");
-                                    //droneSettings.turnRight();
+                                    Log.i(TAG, "Correct x right");
                                     droneSettings.turnSmallLeft();
                                 } else {
-                                    Log.e(TAG, "Correct x left");
-                                    //droneSettings.turnLeft();
+                                    Log.i(TAG, "Correct x left");
                                     droneSettings.turnSmallRight();
                                 }
                             } else {
@@ -830,10 +830,10 @@ public class AutoPilotModule {
                             }
                             if (Math.abs(deltaY) > mDistance) {
                                 if (deltaY > 0) {
-                                    Log.e(TAG, "Correct y DOWN");
+                                    Log.i(TAG, "Correct y DOWN");
                                     droneSettings.moveCameraTiltBy(5);
                                 } else {
-                                    Log.e(TAG, "Correct y UP");
+                                    Log.i(TAG, "Correct y UP");
                                     droneSettings.moveCameraTiltBy(-5);
                                 }
                             }
@@ -844,6 +844,9 @@ public class AutoPilotModule {
                     runOnUiThread(new Runnable() {
                         @Override
                         public void run() {
+
+                            // If I can paint assume I can write in the console
+                            mConsoleVView.invalidate();
 
                             if(mRecognized != null){
                                 mOpenCVView.setColor(mRecognized.color());

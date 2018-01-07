@@ -334,7 +334,7 @@ public class DroneStatesSettingsProceduresModule implements ARDeviceControllerLi
      * Start a Mission or continue it if already started
      */
     void startMission(){
-        //DroneApplication.getApplication().getConsoleMessage().pushMessage("Start or continue Mission");
+        DroneApplication.pushInfoMessage("Start or continue Mission");
         currentMissionRunning = true;
         currentMission.start();
     }
@@ -452,7 +452,6 @@ public class DroneStatesSettingsProceduresModule implements ARDeviceControllerLi
          * @return (boolean)
          */
         boolean start(){
-            //DroneApplication.getApplication().getConsoleMessage().pushMessage("Init");
             pauseMission = false;
             waitForConfigEnd = false; waitForFlyingStateChanged = false; waitForPlayingStateChanged = false; waitForMoveByEnd = false;
 

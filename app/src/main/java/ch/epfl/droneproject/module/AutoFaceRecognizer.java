@@ -14,6 +14,8 @@ import java.io.FilenameFilter;
 import java.nio.IntBuffer;
 import java.util.Map;
 
+import ch.epfl.droneproject.DroneApplication;
+
 import static org.bytedeco.javacpp.opencv_core.*;
 import static org.bytedeco.javacpp.opencv_face.FaceRecognizer;
 import static org.bytedeco.javacpp.opencv_face.createEigenFaceRecognizer;
@@ -90,10 +92,7 @@ public class AutoFaceRecognizer {
         }
 
         public boolean equals(Recognized other){
-            if(other != null) {
-                return this.id == other.id;
-            }
-            return false;
+            return other != null && this.id == other.id;
         }
     }
 
@@ -130,13 +129,13 @@ public class AutoFaceRecognizer {
 
         File file = new File(EXTERNAL_DIRECTORY+MODEL_FILE_PATH);
         if(file.exists()){
-            Log.i(TAG, "Model exists");
+            DroneApplication.pushInfoMessage("Model exists");
             faceRecognizer.load(EXTERNAL_DIRECTORY+MODEL_FILE_PATH);
             isTrained = true;
-            Log.i(TAG, "Model Loaded");
+            DroneApplication.pushInfoMessage("Model Loaded");
         }
         else{
-            Log.i(TAG, "Model does not exist");
+            DroneApplication.pushInfoMessage("Model does not exist");
             isTrained = false;
             loadTrainingImages();
             train();
@@ -186,8 +185,7 @@ public class AutoFaceRecognizer {
             String labelInfo = faceRecognizer.getLabelInfo(label).getString();
             char type = labelInfo.charAt(0);
 
-            Log.e(TAG, "Predicted label: " + label+ " - "+labelInfo + ", confidence: " + confidence);
-
+            DroneApplication.pushDebugMessage("Predicted label: " + label+ " - "+labelInfo + ", confidence: " + confidence);
 
             if(confidence < CONFIDENCE_THRESHOLD){
 
@@ -211,11 +209,12 @@ public class AutoFaceRecognizer {
      * and store them by X value
      */
     private void loadTrainingImages() {
-        Log.i(TAG, "Load Training Images");
+        DroneApplication.pushInfoMessage("Load Training Images");
 
         // if the directory doesn't exist -> no training files
         File root = new File(EXTERNAL_DIRECTORY);
         if(!(root.exists() && root.isDirectory())) {
+            DroneApplication.pushErrorMessage("Failed to load image, no directory: " + EXTERNAL_DIRECTORY);
             Log.e(TAG, "Failed to load image, no directory: " + EXTERNAL_DIRECTORY);
             return;
         }
@@ -230,6 +229,7 @@ public class AutoFaceRecognizer {
         File[] imageFiles = root.listFiles(imgFilter);
 
         if(imageFiles.length < 3){
+            DroneApplication.pushErrorMessage("Not enough images for training !");
             Log.e(TAG, "Not enough images for training !");
         }else{
 
@@ -273,20 +273,18 @@ public class AutoFaceRecognizer {
      * Train the model on the loaded images and save the model for next start
      */
     private void train(){
-        Log.i(TAG, "Train if no null");
         if(faceRecognizer != null && images != null && labelsMat != null) {
-            Log.i(TAG, "Set the labels info");
             for(Map.Entry<Integer, String> entry : labelNamesList.entrySet()) {
                 int key = entry.getKey();
                 String name = entry.getValue();
                 faceRecognizer.setLabelInfo(key, name);
             }
-            Log.i(TAG, "Start of Train ! ");
+            DroneApplication.pushInfoMessage("Start training");
             faceRecognizer.train(images, labelsMat);
-            Log.i(TAG, "End of Train ! now Start Saving the model");
+            DroneApplication.pushInfoMessage("End training, Start saving");
             faceRecognizer.save(EXTERNAL_DIRECTORY+MODEL_FILE_PATH);
             isTrained = true;
-            Log.i(TAG, "End of Save");
+            DroneApplication.pushInfoMessage("End saving");
         }
     }
 }
