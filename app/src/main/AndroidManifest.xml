@@ -31,17 +31,14 @@
         android:theme="@style/AppTheme"
         android:name="ch.epfl.droneproject.DroneApplication">
         <activity
-            android:name=".activity.MainActivity"
-            android:theme="@style/AppTheme.NoActionBar"
+            android:theme="@style/SplashTheme"
+            android:name=".activity.DeviceListActivity"
             android:screenOrientation="landscape">
             <intent-filter>
                 <action android:name="android.intent.action.MAIN" />
                 <category android:name="android.intent.category.LAUNCHER" />
             </intent-filter>
         </activity>
-        <activity
-            android:name=".activity.DeviceListActivity"
-            android:screenOrientation="landscape" />
         <activity
             android:name=".activity.SkyControllerActivity"
             android:configChanges="orientation|keyboardHidden"
