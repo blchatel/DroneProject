@@ -72,7 +72,7 @@ public class DeviceListActivity extends AppCompatActivity{
     @Override
     protected void onCreate(Bundle savedInstanceState)
     {
-        //setTheme(R.style.AppTheme);
+        setTheme(R.style.AppTheme);
         // Call parent and set content layout
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_device_list);
