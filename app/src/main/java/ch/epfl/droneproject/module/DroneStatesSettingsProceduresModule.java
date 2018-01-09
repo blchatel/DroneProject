@@ -699,82 +699,30 @@ public class DroneStatesSettingsProceduresModule implements ARDeviceControllerLi
      */
     private Mission angryMission = new Mission() {
 
-        final float amplitude = 0.3f; // 30 cm
+        final float amplitude = 1.2f; // 120 cm
 
         @Override
         public boolean init(){
 
-            procedures.add(new Procedure() {
-                @Override
-                public boolean process() {
-                    waitForMoveByEnd = true;
-                    climbBy(amplitude);
-                    return true;
-                }
-            });
-            procedures.add(new Procedure() {
-                @Override
-                public boolean process() {
-                    waitForMoveByEnd = true;
-                    descendBy(amplitude);
-                    return true;
-                }
-            });
+            for(int i = 0; i < 4; i++) {
 
-
-            procedures.add(new Procedure() {
-                @Override
-                public boolean process() {
-                    waitForMoveByEnd = true;
-                    climbBy(amplitude);
-                    return true;
-                }
-            });
-            procedures.add(new Procedure() {
-                @Override
-                public boolean process() {
-                    waitForMoveByEnd = true;
-                    descendBy(amplitude);
-                    return true;
-                }
-            });
-
-
-            procedures.add(new Procedure() {
-                @Override
-                public boolean process() {
-                    waitForMoveByEnd = true;
-                    climbBy(amplitude);
-                    return true;
-                }
-            });
-            procedures.add(new Procedure() {
-                @Override
-                public boolean process() {
-                    waitForMoveByEnd = true;
-                    descendBy(amplitude);
-                    return true;
-                }
-            });
-
-
-            procedures.add(new Procedure() {
-                @Override
-                public boolean process() {
-                    waitForMoveByEnd = true;
-                    climbBy(amplitude);
-                    return true;
-                }
-            });
-            procedures.add(new Procedure() {
-                @Override
-                public boolean process() {
-                    waitForMoveByEnd = true;
-                    descendBy(amplitude);
-                    return true;
-                }
-            });
-
+                procedures.add(new Procedure() {
+                    @Override
+                    public boolean process() {
+                        waitForMoveByEnd = true;
+                        climbBy(amplitude);
+                        return true;
+                    }
+                });
+                procedures.add(new Procedure() {
+                    @Override
+                    public boolean process() {
+                        waitForMoveByEnd = true;
+                        descendBy(amplitude);
+                        return true;
+                    }
+                });
+            }
             return true;
         }
     };
@@ -786,7 +734,7 @@ public class DroneStatesSettingsProceduresModule implements ARDeviceControllerLi
      */
     private Mission unknownMission = new Mission() {
 
-        final float d = 0.3f; // 30 cm
+        final float d = 0.6f; // 60 cm
 
         @Override
         public boolean init(){
@@ -924,5 +872,4 @@ public class DroneStatesSettingsProceduresModule implements ARDeviceControllerLi
             }
         }
     }
-
 }

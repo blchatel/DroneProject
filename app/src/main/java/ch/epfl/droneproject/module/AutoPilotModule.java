@@ -501,9 +501,9 @@ public class AutoPilotModule {
      */
     private class OpenCVThread extends Thread implements View.OnTouchListener{
 
-        private static final double AREA_THRESHOLD = 0.04;
+        private static final double AREA_THRESHOLD = 0.045;
         private static final int MAX_CLICK_DURATION = 200;
-        private static final int RECOGNIZED_TIME = 1500;
+        private static final int RECOGNIZED_TIME = 1000;
         private long startClickTime;
         private long startRecognizedTime;
 
