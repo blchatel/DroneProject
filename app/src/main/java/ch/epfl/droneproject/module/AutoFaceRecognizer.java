@@ -71,6 +71,9 @@ public class AutoFaceRecognizer {
         private final int color;
         private final String text;
 
+        private static double confidence;
+
+
         Recognized(final int id, final char type, String text, int color) {
             this.id = id;
             this.type = type;
@@ -88,12 +91,15 @@ public class AutoFaceRecognizer {
             return color;
         }
         public String text(){
-            return text;
+            return text +" "+confidence;
         }
 
         public boolean equals(Recognized other){
             return other != null && this.id == other.id;
         }
+
+        //public static double confidence(){return confidence; }
+        public static void setConfidence(double c){confidence = c; }
     }
 
     // Contants
@@ -102,7 +108,7 @@ public class AutoFaceRecognizer {
     private static final String TRAINING_FOLDER_PATH = "/Training/";
     private static final int TRAINING_WIDTH = 120;
     private static final int TRAINING_HEIGHT = 90;
-    private static final double CONFIDENCE_THRESHOLD = 4500;
+    private static final double CONFIDENCE_THRESHOLD = 6000;
 
     private final String EXTERNAL_DIRECTORY; // computed in constructor
 
@@ -186,6 +192,8 @@ public class AutoFaceRecognizer {
             char type = labelInfo.charAt(0);
 
             DroneApplication.pushDebugMessage("Predicted label: " + label+ " - "+labelInfo + ", confidence: " + confidence);
+
+            Recognized.setConfidence(confidence);
 
             if(confidence < CONFIDENCE_THRESHOLD){
 

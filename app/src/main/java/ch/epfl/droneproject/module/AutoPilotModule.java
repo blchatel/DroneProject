@@ -501,7 +501,7 @@ public class AutoPilotModule {
      */
     private class OpenCVThread extends Thread implements View.OnTouchListener{
 
-        private static final double AREA_THRESHOLD = 0.045;
+        private static final double AREA_THRESHOLD = 0.035;
         private static final int MAX_CLICK_DURATION = 200;
         private static final int RECOGNIZED_TIME = 1000;
         private long startClickTime;
@@ -796,6 +796,8 @@ public class AutoPilotModule {
                                 } else if (Calendar.getInstance().getTimeInMillis() - startRecognizedTime > RECOGNIZED_TIME){
                                     // The face is recognized and of the same type for a RECOGNIZED_TIME, we can send the mission
                                     if(isEngaged && !isInFlightPlan && !isInMission) {
+                                        DroneApplication.pushInfoMessage("Start Mission");
+                                        isInMission = true;
                                         droneSettings.startMission(mRecognized);
                                     }
                                 }
@@ -828,7 +830,7 @@ public class AutoPilotModule {
                             } else {
                                 droneSettings.fixYaw();
                             }
-                            if (Math.abs(deltaY) > mDistance) {
+                            if (Math.abs(deltaY) > mDistance/2) {
                                 if (deltaY > 0) {
                                     Log.i(TAG, "Correct y DOWN");
                                     droneSettings.moveCameraTiltBy(5);

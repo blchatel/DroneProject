@@ -57,7 +57,6 @@ public class DroneStatesSettingsProceduresModule implements ARDeviceControllerLi
 
     // Current mission and states flag
     private Mission currentMission;
-    private boolean currentMissionRunning;
 
     /**
      * Default constructor for DroneStatesSettingsProceduresModule
@@ -68,7 +67,9 @@ public class DroneStatesSettingsProceduresModule implements ARDeviceControllerLi
         this.mSKEModule = skeModule;
         this.mAutopilot = autopilot;
         mHandler = new Handler(DroneApplication.getApplication().getContext().getMainLooper());
-        currentMission = finalMissionPart1;
+        //currentMission = sayNoMission;
+        //currentMission = sayYesMission;
+        currentMission = unknownMission;
     }
 
     // States methods. This class is kept up to date by calling the following methods
@@ -162,7 +163,11 @@ public class DroneStatesSettingsProceduresModule implements ARDeviceControllerLi
         return true;
     }
     boolean turnSmallRight(){
-        mSKEModule.setYaw((byte) 5);
+        mSKEModule.setYaw((byte) 10);
+        return true;
+    }
+    boolean turnBigRight(){
+        mSKEModule.setYaw((byte) 80);
         return true;
     }
 
@@ -176,7 +181,11 @@ public class DroneStatesSettingsProceduresModule implements ARDeviceControllerLi
         return true;
     }
     boolean turnSmallLeft(){
-        mSKEModule.setYaw((byte) -5);
+        mSKEModule.setYaw((byte) -10);
+        return true;
+    }
+    boolean turnBigLeft(){
+        mSKEModule.setYaw((byte) -80);
         return true;
     }
 
@@ -192,6 +201,38 @@ public class DroneStatesSettingsProceduresModule implements ARDeviceControllerLi
         }
         return false;
     }
+
+
+    /**
+     * Make the drone looking up by setting pitch rotation to -50% of the max rotation speed
+     * Recall rotation speed is given between -100 and +100
+     * @return true (boolean)
+     */
+    boolean lookUp(){
+        mSKEModule.setPitch((byte) -90);
+        return true;
+    }
+
+    /**
+     * Make the drone looking down by setting pitch rotation to 50% of the max rotation speed
+     * Recall rotation speed is given between -100 and +100
+     * @return true (boolean)
+     */
+    boolean lookDown(){
+        mSKEModule.setPitch((byte) +90);
+        return true;
+    }
+
+    /**
+     * Make the drone stop pitching by setting pitch rotation to 0
+     * Recall rotation speed is given between -100 and +100
+     * @return true (boolean)
+     */
+    boolean fixPitch(){
+        mSKEModule.setPitch((byte) 0);
+        return true;
+    }
+
 
     /**
      * Make the drone climb by setting gaz to 50% of the max gaz value
@@ -239,8 +280,6 @@ public class DroneStatesSettingsProceduresModule implements ARDeviceControllerLi
         return true;
     }
 
-    // TODO check axis orientation !!
-
     /**
      * Make the drone descend by dz using moveBy
      * @param dz (float)
@@ -282,8 +321,10 @@ public class DroneStatesSettingsProceduresModule implements ARDeviceControllerLi
      * @return true (boolean)
      */
     boolean getCloserTo(){
-        double dTilt = (double)tilt;
-        // TODO Check the tilt positive direction
+        double dTilt = (double)tilt*Math.PI/180; // convert degrees in radian
+        // tilt zero is the horizon
+        // Tilt negative is looking down
+        // tilt positive is looking up
         mSKEModule.moveBy((float)Math.cos(dTilt),0, -(float)Math.sin(dTilt), 0);
         return true;
     }
@@ -335,7 +376,6 @@ public class DroneStatesSettingsProceduresModule implements ARDeviceControllerLi
      */
     void startMission(){
         DroneApplication.pushInfoMessage("Start or continue Mission");
-        currentMissionRunning = true;
         currentMission.start();
     }
 
@@ -345,7 +385,6 @@ public class DroneStatesSettingsProceduresModule implements ARDeviceControllerLi
      * Warning: Hence Please use this method only on autopilot disengage call
      */
     void pauseMission(){
-        currentMissionRunning = false;
         currentMission.pause();
     }
 
@@ -361,58 +400,62 @@ public class DroneStatesSettingsProceduresModule implements ARDeviceControllerLi
                 startUnknown();
                 break;
             case ADMIN:
+                startNoMission();
+                break;
             case FRIEND:
-                startHappy();
+                //startHappy();
                 break;
             case ENEMY:
-                startAngry();
+                //startAngry();
                 break;
         }
     }
 
 
     /**
-     * Start the Happy Mission if no mission is currently running
+     * Start the Happy Mission
      */
     private void startHappy() {
-        if (!currentMissionRunning){
-            currentMission = happyMission;
-            currentMission.reset();
-            startMission();
-        }
+        currentMission = happyMission;
+        currentMission.reset();
+        startMission();
     }
 
     /**
-     * Start properly the Angry Mission if no mission is currently running
+     * Start properly the Angry Mission
      */
     private void startAngry(){
-        if (!currentMissionRunning) {
-            currentMission = angryMission;
-            currentMission.reset();
-            startMission();
-        }
+        currentMission = angryMission;
+        currentMission.reset();
+        startMission();
     }
 
     /**
-     * Start properly the  Unkonwn Mission if no mission is currently running
+     * Start properly the  Unkonwn Mission
      */
     private void startUnknown(){
-        if (!currentMissionRunning) {
-            currentMission = unknownMission;
-            currentMission.reset();
-            startMission();
-        }
+        currentMission = unknownMission;
+        currentMission.reset();
+        startMission();
     }
 
     /**
-     * Start properly the Part1 Mission if no mission is currently running
+     * Start properly the  SayNo Mission
+     */
+    private void startNoMission(){
+        currentMission = sayNoMission;
+        currentMission.reset();
+        startMission();
+    }
+
+
+    /**
+     * Start properly the Part1 Mission
      */
     void startFinalPart1(){
-        if (!currentMissionRunning) {
-            currentMission = finalMissionPart1;
-            currentMission.reset();
-            startMission();
-        }
+        currentMission = finalMissionPart1;
+        currentMission.reset();
+        startMission();
     }
 
     /**
@@ -503,6 +546,7 @@ public class DroneStatesSettingsProceduresModule implements ARDeviceControllerLi
          */
         void end(){
             mAutopilot.endMission();
+            reset();
         }
 
         /**
@@ -734,7 +778,7 @@ public class DroneStatesSettingsProceduresModule implements ARDeviceControllerLi
      */
     private Mission unknownMission = new Mission() {
 
-        final float d = 0.6f; // 60 cm
+        final float d = 0.3f; // 60 cm
 
         @Override
         public boolean init(){
@@ -807,6 +851,192 @@ public class DroneStatesSettingsProceduresModule implements ARDeviceControllerLi
         }
     };
 
+    /**
+     * If the drone Say No
+     *  - Say No by setting yaw left and right
+     */
+    private Mission sayNoMission = new Mission() {
+
+        final int t = 250; //250ms
+
+        @Override
+        public boolean init(){
+
+            procedures.add(new Procedure() {
+                @Override
+                public boolean process() {
+                    turnBigLeft();
+                    return true;
+                }
+            });
+            procedures.add(new Procedure() {
+                @Override
+                public boolean process() {
+                    return sleep(t);
+                }
+            });
+
+            procedures.add(new Procedure() {
+                @Override
+                public boolean process() {
+                    turnBigRight();
+                    return true;
+                }
+            });
+            procedures.add(new Procedure() {
+                @Override
+                public boolean process() {
+                    return sleep(2*t);
+                }
+            });
+
+            procedures.add(new Procedure() {
+                @Override
+                public boolean process() {
+                    turnBigLeft();
+                    return true;
+                }
+            });
+            procedures.add(new Procedure() {
+                @Override
+                public boolean process() {
+                    return sleep(2*t);
+                }
+            });
+
+            procedures.add(new Procedure() {
+                @Override
+                public boolean process() {
+                    turnBigRight();
+                    return true;
+                }
+            });
+            procedures.add(new Procedure() {
+                @Override
+                public boolean process() {
+                    return sleep(2*t);
+                }
+            });
+
+            procedures.add(new Procedure() {
+                @Override
+                public boolean process() {
+                    turnBigLeft();
+                    return true;
+                }
+            });
+            procedures.add(new Procedure() {
+                @Override
+                public boolean process() {
+                    return sleep(t);
+                }
+            });
+
+            procedures.add(new Procedure() {
+                @Override
+                public boolean process() {
+                    fixYaw();
+                    return true;
+                }
+            });
+
+            return true;
+        }
+    };
+
+
+    /**
+     * If the drone Say No
+     *  - Say No by setting yaw left and right
+     */
+    private Mission sayYesMission = new Mission() {
+
+        final int t = 550; //250ms
+
+        @Override
+        public boolean init(){
+
+            procedures.add(new Procedure() {
+                @Override
+                public boolean process() {
+                    lookUp();
+                    return true;
+                }
+            });
+            procedures.add(new Procedure() {
+                @Override
+                public boolean process() {
+                    return sleep(t);
+                }
+            });
+
+            procedures.add(new Procedure() {
+                @Override
+                public boolean process() {
+                    lookDown();
+                    return true;
+                }
+            });
+            procedures.add(new Procedure() {
+                @Override
+                public boolean process() {
+                    return sleep(2*t);
+                }
+            });
+
+            procedures.add(new Procedure() {
+                @Override
+                public boolean process() {
+                    lookUp();
+                    return true;
+                }
+            });
+            procedures.add(new Procedure() {
+                @Override
+                public boolean process() {
+                    return sleep(2*t);
+                }
+            });
+
+            procedures.add(new Procedure() {
+                @Override
+                public boolean process() {
+                    lookDown();
+                    return true;
+                }
+            });
+            procedures.add(new Procedure() {
+                @Override
+                public boolean process() {
+                    return sleep(2*t);
+                }
+            });
+
+            procedures.add(new Procedure() {
+                @Override
+                public boolean process() {
+                    lookUp();
+                    return true;
+                }
+            });
+            procedures.add(new Procedure() {
+                @Override
+                public boolean process() {
+                    return sleep(t);
+                }
+            });
+
+            procedures.add(new Procedure() {
+                @Override
+                public boolean process() {
+                    fixPitch();
+                    return true;
+                }
+            });
+
+            return true;
+        }
+    };
 
     // The listener part. Get callback from the drone
 
